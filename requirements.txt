@@ -1,0 +1,6 @@
+pydub==0.25.1
+PyAutoGUI==0.9.53
+PyAudio==0.2.11
+faster-whisper @ https://github.com/guillaumekln/faster-whisper/archive/refs/heads/master.tar.gz
+openai-whisper @ git+https://github.com/openai/whisper.git@38f2f4d99d297c2fc09f9f5f28eaa06b017e24a3
+opencv-python==4.7.0.72
