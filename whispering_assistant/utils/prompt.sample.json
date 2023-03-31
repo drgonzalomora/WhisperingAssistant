@@ -1,0 +1,12 @@
+{
+    "people_names": [
+        "joshua"
+    ],
+    "project_names": [
+        "omega"
+    ],
+    "technical_terms": [
+        "DevOps"
+    ],
+    "initial_prompt": "Joshua is a developer"
+}
