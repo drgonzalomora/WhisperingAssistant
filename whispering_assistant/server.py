@@ -25,12 +25,11 @@ audio = pyaudio.PyAudio()
 print("Audio Driver Loaded")
 
 print("Do an initial transcription to load cache")
-# If no output~1.wav then generate one
+# TODO: If no output~1.wav then generate one
 model_transcribe_cache_init(model, "output~1.wav")
 print("Cache loaded")
 
 print("Load context prompt")
-# If no output~1.wav then generate one
 context_prompt = generate_initial_prompt()
 print("context prompt loaded")
 
