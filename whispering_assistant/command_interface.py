@@ -5,6 +5,10 @@ class BaseCommand(ABC):
 
     # Define a class attribute for the trigger
     trigger = None
+    keywords = {
+        "action": [""],
+        "subject": [""]
+    }
 
     @abstractmethod
     def __init__(self, *args, **kwargs):

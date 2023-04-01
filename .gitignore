@@ -1,3 +1,4 @@
 .idea/
 whispering_assistant/prompt.json
 *.wav
+*.png

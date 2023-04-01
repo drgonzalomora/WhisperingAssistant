@@ -10,6 +10,7 @@ from whispering_assistant.config import WhisperModel_PATH, WhisperModel_DEVICE, 
 from whispering_assistant.utils.audio import record_on_mic_input
 from whispering_assistant.utils.prompt import generate_initial_prompt
 from whispering_assistant.utils.transcription import model_transcribe, model_transcribe_cache_init
+from whispering_assistant.commands import execute_plugin_by_keyword
 
 # Set up Flask app
 app = Flask(__name__)
@@ -49,7 +50,7 @@ def start_mic_to_transcription():
     subprocess.call(['xdotool', 'windowactivate', window_id])
 
     print("Analyzing transcription what command to run")
-    # commands(result_text)
+    execute_plugin_by_keyword(result_text)
     global_var_state.is_transcribing = False
     return
 
