@@ -1,2 +1,3 @@
 .idea/
-whispering_assistant/utils/prompt.json
+whispering_assistant/prompt.json
+*.wav

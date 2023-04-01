@@ -12,7 +12,7 @@ def generate_initial_prompt():
     people_names_formatted = format_variables(data['people_names'])
     project_names_formatted = format_variables(data['project_names'])
     technical_terms_formatted = format_variables(data['technical_terms'])
-    initial_prompt_formatted = format_variables(data['initial_prompt'])
+    initial_prompt_formatted = data['initial_prompt']
 
     initial_prompt = """
     {}.

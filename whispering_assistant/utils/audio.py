@@ -3,7 +3,6 @@ import subprocess
 from pydub.silence import split_on_silence
 from pydub import AudioSegment
 from pydub.silence import detect_silence
-import global_var_state
 
 from whispering_assistant.config import FORMAT, CHANNELS, RATE, CHUNK, RECORD_SECONDS, SILENCE_THRESHOLD, \
     CONSECUTIVE_SILENCE_CHUNKS, OUTPUT_FILE_NAME

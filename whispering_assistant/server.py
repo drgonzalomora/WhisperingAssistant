@@ -1,13 +1,12 @@
 # Needed due to dependency on an installed lib
-import whisper
 import pyaudio
 import subprocess
 from flask import Flask
 from faster_whisper import WhisperModel
 import threading
-import global_var_state
+from whispering_assistant import global_var_state
 from whispering_assistant.config import WhisperModel_PATH, WhisperModel_DEVICE, WhisperModel_COMPUTE, \
-    WhisperModel_WORKERS
+    WhisperModel_WORKERS, PORT
 from whispering_assistant.utils.audio import record_on_mic_input
 from whispering_assistant.utils.prompt import generate_initial_prompt
 from whispering_assistant.utils.transcription import model_transcribe, model_transcribe_cache_init
@@ -61,7 +60,7 @@ def stop_record():
 
 @app.route('/', methods=['GET'])
 def hello():
-    if global_var_state.is_transcribing == "STOP":
+    if not global_var_state.is_transcribing:
         print("Starting recording...")
         start_mic_to_transcription()
     else:
@@ -71,7 +70,7 @@ def hello():
 
 
 def run_app():
-    app.run(port=7070)
+    app.run(port=PORT)
 
 
 # def run_hot_word_detection():
