@@ -1,17 +1,18 @@
 import os
+import subprocess
 
 from whispering_assistant.commands.command_base_template import BaseCommand, command_types
 
 
-class Shutdown(BaseCommand):
+class LockScreen(BaseCommand):
     # Set the trigger for the 'Shutdown' command plugin
-    trigger = "shutdown"
+    trigger = "lock_screen"
     command_type = command_types['ONE_SHOT']
     keywords = {
-        "action": ["shutdown", "power off", "turn off"],
+        "action": ["lock", "lock screen"],
         "subject": ["laptop", "computer"]
     }
 
     def run(self, *args, **kwargs):
-        # Your command execution logic here
-        os.system("shutdown now")
+        subprocess.run(['xdotool', 'key', 'Super+Escape'])
+
