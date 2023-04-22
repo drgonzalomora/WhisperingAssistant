@@ -75,7 +75,7 @@ def execute_plugin_by_keyword(text, *args, **kwargs):
     found = False
     for plugin in COMMAND_PLUGINS.values():
         if plugin.trigger.lower() != FALL_BACK_COMMAND:
-            match, text_parameter = check_strings(text, plugin.keywords)
+            match, text_parameter = check_strings(text.lower(), plugin.keywords)
             if match:
                 plugin.run(*args, text_parameter=text_parameter, **kwargs)
                 found = True

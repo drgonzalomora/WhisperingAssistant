@@ -8,7 +8,7 @@ class Shutdown(BaseCommand):
     trigger = "shutdown"
     command_type = command_types['ONE_SHOT']
     keywords = {
-        "action": ["shutdown", "power off", "turn off"],
+        "action": ["shutdown", "shut down", "power off", "turn off"],
         "subject": ["laptop", "computer"]
     }
 
