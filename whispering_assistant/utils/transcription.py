@@ -93,19 +93,15 @@ def check_transcript_for_short_commands(stream, model, audio):
         data = stream.read(CHUNK)
         frames.append(data)
 
-    context_prompt = get_prompt_short_commands()
+    # TODO: Replace this with a function
+    context_prompt = "lock screen"
     result_text = save_file_then_transcribe(frames=frames, model=model, audio=audio, context_prompt=context_prompt)
 
     command_chainable = False
     skip_next_transcription = False
     run_short_command = False
 
-    # Check if result_text contains keyword that can affect the next part of transcription
-    if check_if_chainable_commands(result_text):
-        print("One of the keywords was found in the result text.")
-        command_chainable = True
-
-    if 'cancel' in result_text.lower() or not result_text or check_if_quick_action_commands(result_text):
+    if 'cancel' in result_text.lower() or not result_text:
         skip_next_transcription = True
         run_short_command = True
 
