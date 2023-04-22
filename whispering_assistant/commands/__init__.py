@@ -1,22 +1,23 @@
-from whispering_assistant.extension_templates.command_interface import BaseCommand
+from whispering_assistant.commands.command_base_template import BaseCommand
 import os
 import importlib
 
 COMMAND_PLUGINS = {}
 
 for file in os.listdir(os.path.dirname(__file__)):
-    if file.endswith(".py") and file != "__init__.py":
+    if file.endswith(".py") and file != "__init__.py" and file != "command_base_template.py":
         module_name = file[:-3]  # Remove the .py extension
         module = importlib.import_module(f"{__package__}.{module_name}")
         for attr_name in dir(module):
             attribute = getattr(module, attr_name)
             if (
-                isinstance(attribute, type)
-                and issubclass(attribute, BaseCommand)
-                and attribute is not BaseCommand
+                    isinstance(attribute, type)
+                    and issubclass(attribute, BaseCommand)
+                    and attribute is not BaseCommand
             ):
                 command_trigger = attribute.trigger.lower()
                 COMMAND_PLUGINS[command_trigger] = attribute()
+
 
 def execute_plugin(trigger, *args, **kwargs):
     plugin = COMMAND_PLUGINS.get(trigger.lower())
@@ -24,6 +25,7 @@ def execute_plugin(trigger, *args, **kwargs):
         plugin.run(*args, **kwargs)
     else:
         print(f"No plugin found for trigger: {trigger}")
+
 
 def check_strings(text, keywords):
     action_index = None
@@ -62,11 +64,12 @@ def check_strings(text, keywords):
 
     if subject_found and subject_length > 0:
         text_parameter = text[subject_index + subject_length:]
-    elif action_found and action_length > 0 :
+    elif action_found and action_length > 0:
         text_parameter = text[action_index + action_length:]
 
     # print("action_found", action_found,subject_found,subject_index,action_index, text_parameter)
     return (action_found and subject_found and action_index < subject_index), text_parameter
+
 
 def execute_plugin_by_keyword(text, *args, **kwargs):
     found = False

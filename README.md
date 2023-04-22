@@ -3,7 +3,7 @@ A digital assistant powered by OpenAI's Whisper Transcription Service, designed 
 
 
 ## 📌 Clean Up
-- Window manager common classes
+- ✅ Window manager common classes
 - Class inheritance for commands
 - Add all the commands supported one by one
 - Short command logic

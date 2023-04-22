@@ -1,4 +1,4 @@
-from whispering_assistant.extension_templates.command_interface import BaseCommand
+from whispering_assistant.commands.command_base_template import BaseCommand, FALL_BACK_COMMAND
 import pyperclip
 import time
 import subprocess
@@ -51,10 +51,7 @@ def get_active_window_name():
 
 
 class TypeInput(BaseCommand):
-    trigger = "fallback"
-
-    def __init__(self, *args, **kwargs):
-        pass
+    trigger = FALL_BACK_COMMAND
 
     def run(self, *args, text_parameter="", **kwargs):
         old_clipboard = pyperclip.paste()
