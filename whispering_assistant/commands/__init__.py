@@ -1,4 +1,4 @@
-from whispering_assistant.commands.command_base_template import BaseCommand
+from whispering_assistant.commands.command_base_template import BaseCommand, FALL_BACK_COMMAND
 import os
 import importlib
 
@@ -74,7 +74,7 @@ def check_strings(text, keywords):
 def execute_plugin_by_keyword(text, *args, **kwargs):
     found = False
     for plugin in COMMAND_PLUGINS.values():
-        if plugin.trigger.lower() != "fallback":
+        if plugin.trigger.lower() != FALL_BACK_COMMAND:
             match, text_parameter = check_strings(text, plugin.keywords)
             if match:
                 plugin.run(*args, text_parameter=text_parameter, **kwargs)
@@ -83,7 +83,7 @@ def execute_plugin_by_keyword(text, *args, **kwargs):
 
     if not found:
         print(f"No plugin found for text: {text}")
-        fallback_plugin = COMMAND_PLUGINS.get("fallback")
+        fallback_plugin = COMMAND_PLUGINS.get(FALL_BACK_COMMAND.lower())
         if fallback_plugin:
             fallback_plugin.run(*args, text_parameter=text, **kwargs)
         else:

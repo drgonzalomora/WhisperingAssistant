@@ -3,3 +3,4 @@ whispering_assistant/prompt.json
 *.wav
 *.png
 /whispering_assistant/configs/.env
+/whispering_assistant/training_data/

@@ -5,7 +5,7 @@ import subprocess
 
 x2, y2, width2, height2 = 630, 900, 1600, 1200
 region2 = (x2, y2, width2, height2)
-image2 = 'CHAT_BOX.png'
+image2 = '/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/images/CHAT_BOX.png'
 
 def paste_input():
     import pyautogui
