@@ -4,7 +4,10 @@ import time
 from PyQt5.QtWidgets import QListWidget, QListWidgetItem
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout
 
-class ChoiceWindow(QMainWindow):
+from whispering_assistant.window_managers.windows.base_window_template import BaseWindowTemplate
+
+
+class ChoiceWindow(BaseWindowTemplate):
     def __init__(self, parent=None, choices=[], process_cb=None):
         super().__init__(parent)
         self.initUI(choices=choices, process_cb=process_cb)
@@ -39,7 +42,3 @@ class ChoiceWindow(QMainWindow):
         if self.process_cb:
             self.process_cb(selected_item)
         self.close()
-
-    def closeEvent(self, event):
-        event.ignore()
-        self.hide()

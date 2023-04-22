@@ -5,6 +5,7 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout
 
 from whispering_assistant.utils.prompt import generate_prompt
+from whispering_assistant.window_managers.windows.base_window_template import BaseWindowTemplate
 
 
 def update_prompt_dict(text):
@@ -25,14 +26,13 @@ def update_prompt_dict(text):
 
     generate_prompt()
     return unique_words
-class TextInputProcessingApp(QMainWindow):
+
+
+class TextInputProcessingApp(BaseWindowTemplate):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.initUI()
-
-    def closeEvent(self, event):
-        event.ignore()
-        self.hide()
+        self.text_input = None
+        self.processing_function = None
 
     def initUI(self):
         self.processing_function = update_prompt_dict

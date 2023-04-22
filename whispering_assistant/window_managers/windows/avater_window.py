@@ -5,12 +5,15 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 
-class InfoWindow(QMainWindow):
+from whispering_assistant.window_managers.windows.base_window_template import BaseWindowTemplate
+
+
+class InfoWindow(BaseWindowTemplate):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.initUI()
 
-    def initUI(self, title="Info", width=300, height=300, media_path="whispering_assistant/assets/videos/ARA_AVATAR.mp4"):
+    def initUI(self, title="Info", width=300, height=300,
+               media_path="whispering_assistant/assets/videos/ARA_AVATAR.mp4"):
         self.setWindowTitle(title)
         self.setGeometry(0, 0, width, height)
 
@@ -54,8 +57,3 @@ class InfoWindow(QMainWindow):
         if status == QMediaPlayer.EndOfMedia:
             self.media_player.setPosition(0)
             self.media_player.play()
-
-    def closeEvent(self, event):
-        event.ignore()
-        self.media_player.stop()
-        self.hide()
