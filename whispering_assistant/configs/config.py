@@ -19,11 +19,11 @@ os.environ["XDG_RUNTIME_DIR"] = "/run/user/1000"
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 48000
-CHUNK_SECONDS = 0.25
+CHUNK_SECONDS = 0.1
 CHUNK = int(RATE * CHUNK_SECONDS)
 RECORD_SECONDS = 28
 SILENCE_THRESHOLD = -40
-CONSECUTIVE_SILENCE_CHUNKS = 2.5
+CONSECUTIVE_SILENCE_CHUNKS = 1
 
 # Server
 PORT = "6969"
@@ -32,7 +32,7 @@ OUTPUT_FILE_NAME = "output.wav"
 # Whisper
 WhisperModel_DEVICE = "cuda"
 WhisperModel_WORKERS = 10
-WhisperModel_PATH = "tiny"
+WhisperModel_PATH = "/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/ml/whisper-large-v2-ct2"
 
 # compute_type="int8"
 # compute_type="int8_float16"

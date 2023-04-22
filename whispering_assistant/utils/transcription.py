@@ -188,7 +188,7 @@ def start_mic_to_transcription(cutoff_padding=0, model=None):
             audio_segment = AudioSegment(data=current_audio, sample_width=audio.get_sample_size(FORMAT),
                                          frame_rate=RATE,
                                          channels=CHANNELS)
-            is_silent = detect_silence(audio_segment, min_silence_len=90, silence_thresh=SILENCE_THRESHOLD)
+            is_silent = detect_silence(audio_segment, min_silence_len=180, silence_thresh=SILENCE_THRESHOLD)
             print("is_silent", is_silent)
 
             if is_silent:
