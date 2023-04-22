@@ -2,20 +2,26 @@ import json
 import re
 from whispering_assistant.states_manager.window_manager_messages import message_queue
 
+initial_prompt_cache = None
+
 
 def format_variables(variable):
     formatted_variable = ','.join(variable)
     return formatted_variable
 
+
 def format_variables(variable):
     formatted_variable = ','.join(variable)
     return formatted_variable
+
 
 def flatten_list(nested_list):
     return [item for sublist in nested_list for item in sublist]
 
+
 def unique_list_elements(input_list):
     return list(set(input_list))
+
 
 def unique_words_in_list(items):
     words_list = [item.split() for item in items]
@@ -24,7 +30,8 @@ def unique_words_in_list(items):
 
 
 def generate_initial_prompt():
-    with open('/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/docs/prompt.json', 'r') as file:
+    with open('/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/docs/prompt.json',
+              'r') as file:
         data = json.load(file)
 
     people_names_formatted = format_variables(data['people_names'])

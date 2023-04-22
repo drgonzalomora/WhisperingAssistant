@@ -2,13 +2,14 @@ from whispering_assistant.commands.command_base_template import BaseCommand, FAL
 import pyperclip
 import time
 import subprocess
-import pyautogui
 
 x2, y2, width2, height2 = 630, 900, 1600, 1200
 region2 = (x2, y2, width2, height2)
 image2 = 'CHAT_BOX.png'
 
 def paste_input():
+    import pyautogui
+
     curr_clipboard = pyperclip.paste()
     # Look for image2 on the screen
     image2_location = pyautogui.locateOnScreen(image2, region=region2, confidence=0.8)

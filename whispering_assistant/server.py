@@ -9,14 +9,14 @@ from whispering_assistant.window_managers.window_manager import run_blocking_win
 
 # Set up Flask app
 app = Flask(__name__)
-model = start_up_required_libs()
+context_prompt, audio, model = start_up_required_libs()
 
 
 @app.route('/', methods=['GET'])
 def activate_transcription():
     global model
 
-    if not global_var_state.is_transcribing:
+    if global_var_state.is_transcribing == "STOP":
         print("Listening...")
         start_mic_to_transcription(model=model)
     else:

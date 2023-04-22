@@ -29,16 +29,18 @@ def model_transcribe_cache_init(model, filepath, beam_size=1, best_of=1):
 
 
 def save_transcription(transcription, timestamp):
-    with open(f"./{AUDIO_FILES_DIR}/transcription_{timestamp}.txt", "w") as f:
+    with open(f"../{AUDIO_FILES_DIR}/transcription_{timestamp}.txt", "w") as f:
         f.write(transcription)
 
 
-def save_file_then_transcribe(frames, model, audio, transcription_args, context_prompt):
+def save_file_then_transcribe(frames, model, audio, context_prompt, transcription_args=None):
+    if transcription_args is None:
+        transcription_args = {}
     start_time = time.time()
     timestamp = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
     audio_file_name = "audio"
     audio_file_extension = "wav"
-    audio_file_with_timestamp = f"./{AUDIO_FILES_DIR}/{audio_file_name}_{timestamp}.{audio_file_extension}"
+    audio_file_with_timestamp = f"../{AUDIO_FILES_DIR}/{audio_file_name}_{timestamp}.{audio_file_extension}"
 
     mic_stream = AudioSegment(b''.join(frames), sample_width=audio.get_sample_size(FORMAT), channels=CHANNELS,
                               frame_rate=RATE)
@@ -145,7 +147,7 @@ def start_mic_to_transcription(cutoff_padding=0, model=None):
     elapsed_time = time.time() - start_time
     print(f"Time taken for recording audio: {elapsed_time:.5f} seconds")
 
-    frames, chainable_commands, skip_next_transcription = check_transcript_for_short_commands(stream)
+    frames, chainable_commands, skip_next_transcription = check_transcript_for_short_commands(stream, audio=audio, model=model)
 
     silence_counter = 0
     max_it = int(RATE / CHUNK * RECORD_SECONDS)
@@ -232,5 +234,5 @@ def start_mic_to_transcription(cutoff_padding=0, model=None):
 
 
 def stop_record():
-    global_var_state.should_transcribe = False
+    global_var_state.is_transcribing = "STOP"
     return
