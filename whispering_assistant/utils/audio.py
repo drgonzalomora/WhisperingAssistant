@@ -1,4 +1,4 @@
-from whispering_assistant import global_var_state
+from whispering_assistant.states_manager import global_var_state
 import subprocess
 from pydub.silence import split_on_silence
 from pydub import AudioSegment

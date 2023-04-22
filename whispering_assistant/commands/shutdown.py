@@ -1,4 +1,4 @@
-from whispering_assistant.command_interface import BaseCommand
+from whispering_assistant.extension_templates.command_interface import BaseCommand
 
 class Shutdown(BaseCommand):
     # Set the trigger for the 'Shutdown' command plugin

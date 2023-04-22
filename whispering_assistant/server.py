@@ -4,7 +4,7 @@ import subprocess
 from flask import Flask
 from faster_whisper import WhisperModel
 import threading
-from whispering_assistant import global_var_state
+from whispering_assistant.states_manager import global_var_state
 from whispering_assistant.config import WhisperModel_PATH, WhisperModel_DEVICE, WhisperModel_COMPUTE, \
     WhisperModel_WORKERS, PORT
 from whispering_assistant.utils.audio import record_on_mic_input
