@@ -1,13 +1,25 @@
-import subprocess
-import re
+import pulsectl
 
-def get_current_volume():
-    output = subprocess.check_output(["amixer", "-D", "pulse", "sget", "Master"]).decode("utf-8")
-    match = re.search(r"\[(\d+)%\]", output)
-    if match:
-        curr_volume = int(match.group(1))
-        return curr_volume
-    return None
 
-def set_volume(volume_percent):
-    return subprocess.call(["pactl", "set-sink-volume", "0", volume_percent])
+def get_volume():
+    with pulsectl.Pulse('volume-example') as pulse:
+        sink = pulse.get_sink_by_name(pulse.server_info().default_sink_name)
+        volume = round(pulse.volume_get_all_chans(sink) * 100)
+    return volume
+
+
+def set_volume(new_volume):
+    with pulsectl.Pulse('volume-set-example') as pulse:
+        # Get the default sink
+        sink = pulse.get_sink_by_name(pulse.server_info().default_sink_name)
+
+        # Calculate the new volume as a float in the range [0, 1]
+        new_volume_float = min(max(new_volume, 0), 100) / 100.0
+
+        # Create a new volume object with the desired volume level for all channels
+        channels = len(sink.volume.values)
+        new_volume_object = pulsectl.PulseVolumeInfo(new_volume_float, channels)
+
+        # Apply the new volume to the sink
+        pulse.volume_set(sink, new_volume_object)
+

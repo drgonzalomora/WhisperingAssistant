@@ -9,10 +9,21 @@ from whispering_assistant.config import FORMAT, CHANNELS, RATE, CHUNK, RECORD_SE
 from whispering_assistant.utils.volumes import get_current_volume, set_volume
 from whispering_assistant.utils.window_dialogs import generate_info_dialog, kill_dialog
 
+def slow_down_audio(input_file, slowdown_factor=0.80):
+    # Load the input audio file
+    y, sr = librosa.load(input_file, sr=None)
+
+    # Stretch the audio (slow it down)
+    y_slow = librosa.effects.time_stretch(y, rate=slowdown_factor)
+
+    # Save the slowed down audio
+    sf.write(input_file, y_slow, sr, subtype='PCM_24')
+    return input_file
+
 
 def remove_silences(input_file):
     audio_input = AudioSegment.from_file(input_file, format="wav")
-    chunks = split_on_silence(audio_input, min_silence_len=1000, silence_thresh=audio_input.dBFS - 24)
+    chunks = split_on_silence(audio_input, min_silence_len=1500, silence_thresh=audio_input.dBFS - 24)
 
     combined = AudioSegment.empty()
     for chunk in chunks:
@@ -23,6 +34,7 @@ def remove_silences(input_file):
     output_file_with_postfix = f"{output_file_name}{postfix}.{output_file_extension}"
     combined.export(output_file_with_postfix, format="wav")
     return output_file_with_postfix
+
 
 # audio = pyaudio.PyAudio()
 def record_on_mic_input(audio):
