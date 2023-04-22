@@ -20,7 +20,7 @@ def start_up_required_libs():
 
     print("Do an initial transcription to load cache")
     # TODO: If no output~1.wav then generate one
-    model_transcribe_cache_init(model, "whispering_assistant/training_data/output~1.wav")
+    model_transcribe_cache_init(model, "/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/training_data/output~1.wav")
     print("Cache loaded")
 
     print("Load context prompt")

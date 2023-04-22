@@ -5,7 +5,7 @@ import pvporcupine
 from pvrecorder import PvRecorder
 
 from whispering_assistant.configs.config import hot_word_keywords, hot_word_sensitivities, hot_word_keyword_paths, \
-    hot_word_INTERVAL
+    hot_word_INTERVAL, hot_word_api_key
 from whispering_assistant.states_manager import global_var_state
 
 porcupine = None
@@ -15,7 +15,7 @@ devices = PvRecorder.get_audio_devices()
 print(devices)
 
 porcupine = pvporcupine.create(
-    access_key='KEYS',
+    access_key=hot_word_api_key,
     keywords=hot_word_keywords,
     sensitivities=hot_word_sensitivities,
     keyword_paths=hot_word_keyword_paths

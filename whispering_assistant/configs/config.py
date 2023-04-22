@@ -1,5 +1,9 @@
 import os
 import pyaudio
+from dotenv import load_dotenv
+
+# Load the environment variables from the .env file
+load_dotenv()
 
 # Directory
 script_path = os.path.realpath(__file__)
@@ -38,12 +42,11 @@ WhisperModel_COMPUTE = "int8_float16"
 # Hot Word
 hot_word_keywords = ['victoria']
 hot_word_sensitivities = [1.0]
-hot_word_keyword_paths = [""]
+hot_word_keyword_paths = [os.environ.get("hot_word_keyword_paths")]
 hot_word_INTERVAL = 0.5
 
 # Secrets
-hot_word_api_key = ""
+hot_word_api_key = os.environ.get("hot_word_api_key")
 
 # Training Data
 AUDIO_FILES_DIR = "training_data"
-

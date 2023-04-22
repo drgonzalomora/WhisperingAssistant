@@ -24,7 +24,7 @@ def unique_words_in_list(items):
 
 
 def generate_initial_prompt():
-    with open('prompt.json', 'r') as file:
+    with open('/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/docs/prompt.json', 'r') as file:
         data = json.load(file)
 
     people_names_formatted = format_variables(data['people_names'])
