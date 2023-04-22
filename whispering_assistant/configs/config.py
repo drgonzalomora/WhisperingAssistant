@@ -44,5 +44,6 @@ hot_word_INTERVAL = 0.5
 # Secrets
 hot_word_api_key = ""
 
-
+# Training Data
+AUDIO_FILES_DIR = "training_data"
 
