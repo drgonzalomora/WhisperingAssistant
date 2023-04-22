@@ -1,98 +1,39 @@
+from datetime import datetime
 import time
 
-from whispering_assistant.configs.config import AUDIO_FILES_DIR
+import pyaudio
+from pydub import AudioSegment
+from pydub.silence import detect_silence
+
+from whispering_assistant.commands import execute_plugin_by_keyword
+from whispering_assistant.configs.config import AUDIO_FILES_DIR, CHANNELS, RATE, CHUNK, FORMAT, RECORD_SECONDS, \
+    SILENCE_THRESHOLD, CONSECUTIVE_SILENCE_CHUNKS
+from whispering_assistant.states_manager import global_var_state
+from whispering_assistant.states_manager.window_manager_messages import message_queue
+from whispering_assistant.utils.performance import print_time_profile
+from whispering_assistant.utils.prompt import get_prompt_cache
+from whispering_assistant.utils.volumes import get_volume, set_volume
+from whispering_assistant.utils.window_dialogs import activate_window, get_active_window_id
 
 
-def model_transcribe_cache_init(model,filepath, beam_size=1, best_of=1):
+def model_transcribe_cache_init(model, filepath, beam_size=1, best_of=1):
     segments, info = model.transcribe(filepath, beam_size=beam_size,
                                       best_of=best_of,
                                       temperature=0,
                                       language="en",
                                       without_timestamps=True,
                                       word_timestamps=False)
-    result_text = ""
-
-    for segment in segments:
-        result_text = result_text + segment.text
-        print("[%.2fs -> %.2fs] %s" % (segment.start, segment.end, segment.text))
-
-    print("Showing transcribed text...")
-    print("result", result_text)
-    return result_text
-
-def model_transcribe(model,filepath, context_prompt, beam_size=20, best_of=2):
-    start_time = time.time()
-
-    # We should skip model transcription to the audio file that will be inputted as large number of silences.
-    segments, info = model.transcribe(filepath, beam_size=20,
-                                      best_of=2,
-                                      temperature=0,
-                                      language="en", initial_prompt=context_prompt, without_timestamps=True,
-                                      word_timestamps=False)
-
-    end_time = time.time()
-
-    execution_time = end_time - start_time
-
-    print(f"The execution time is {execution_time} seconds.")
-
-    result_text = ""
-    for segment in segments:
-        result_text = result_text + segment.text
-        print("[%.2fs -> %.2fs] %s" % (segment.start, segment.end, segment.text))
-
-    print("Showing transcribed text...")
-    print("result", result_text)
-
-    end_time = time.time()
-
-    execution_time = end_time - start_time
-
-    print(f"The execution time for result cat is {execution_time} seconds.")
-
-    return result_text
-
-def start_mic_to_transcription():
-    global_var_state.should_transcribe = True
-    global_var_state.is_transcribing = True
-
-    # Get the current window
-    window_id = subprocess.check_output(['xprop', '-root', '_NET_ACTIVE_WINDOW']).split()[-1]
-
-    audio = pyaudio.PyAudio()
-    output_file_name = record_on_mic_input(audio)
-
-    result_text = model_transcribe(model, output_file_name, context_prompt)
-
-    print("Activate prev window...")
-    subprocess.call(['xdotool', 'windowactivate', window_id])
-
-    print("Analyzing transcription what command to run")
-    execute_plugin_by_keyword(result_text)
-    global_var_state.is_transcribing = False
-    return
-
-def stop_record():
-    global_var_state.should_transcribe = False
-    return
+    segments = list(segments)
+    print("segments", segments)
+    return segments
 
 
-def check_transcript_for_short_commands(stream):
-    start_time = time.time()
-    # Show transcribing window
-    print("Showing transcribing window...")
-    max_time_check_short_command = 4
-    frames = []
-    silence_counter = 0
-    max_it = int(RATE / CHUNK * max_time_check_short_command)
-    offset_delay = 0
-    progress_pct = 0
+def save_transcription(transcription, timestamp):
+    with open(f"./{AUDIO_FILES_DIR}/transcription_{timestamp}.txt", "w") as f:
+        f.write(transcription)
 
-    message_queue.put(('create_avatar', 'set_content', "✅ Recording", "✅ Recording..."))
-    for i in range(0, max_it):
-        data = stream.read(CHUNK)
-        frames.append(data)
 
+def save_file_then_transcribe(frames, model, audio, transcription_args, context_prompt):
     start_time = time.time()
     timestamp = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
     audio_file_name = "audio"
@@ -105,20 +46,20 @@ def check_transcript_for_short_commands(stream):
     print_time_profile(start_time, "export audio")
     processed_audio_file_name = audio_file_with_timestamp
 
-    print("💡💡💡Transcribing audio...")
+    print("💡Transcribing audio...")
 
     start_time = time.time()
-    context_prompt = get_prompt_short_commands()
-
-    start_time = time.time()
-    segments, info = model.transcribe(processed_audio_file_name, beam_size=1,
+    segments, info = model.transcribe(processed_audio_file_name,
+                                      beam_size=5,
                                       best_of=1,
                                       temperature=0.1,
                                       language="en",
                                       initial_prompt=context_prompt,
                                       without_timestamps=True,
                                       word_timestamps=False,
-                                      vad_filter=False, vad_parameters=dict(min_silence_duration_ms=1000))
+                                      vad_filter=False, vad_parameters=dict(min_silence_duration_ms=1000),
+                                      **transcription_args,
+                                      )
     print_time_profile(start_time, "generators")
 
     start_time = time.time()
@@ -131,9 +72,29 @@ def check_transcript_for_short_commands(stream):
     print_time_profile(start_time, "transcription")
 
     print("Showing transcribed text...")
-    print("⏳⏳⏳️ result", result_text)
+    print("⏳️ result", result_text)
     print("segment_end", segment_end)
     save_transcription(result_text, timestamp)
+
+    return result_text
+
+
+def check_transcript_for_short_commands(stream, model, audio):
+    start_time = time.time()
+    # Show transcribing window
+    print("Showing transcribing window...")
+    max_time_check_short_command = 4
+    frames = []
+    max_it = int(RATE / CHUNK * max_time_check_short_command)
+
+    message_queue.put(('create_avatar', 'set_content', "✅ Recording", "✅ Recording..."))
+
+    for i in range(0, max_it):
+        data = stream.read(CHUNK)
+        frames.append(data)
+
+    context_prompt = get_prompt_short_commands()
+    result_text = save_file_then_transcribe(frames=frames, model=model, audio=audio, context_prompt=context_prompt)
 
     command_chainable = False
     skip_next_transcription = False
@@ -148,40 +109,33 @@ def check_transcript_for_short_commands(stream):
         skip_next_transcription = True
         run_short_command = True
 
-    if (run_short_command):
-        commands(result_text)
+    if run_short_command:
+        execute_plugin_by_keyword(result_text)
 
     # 📌 TODO: for one-shot commands or short commands, I think we can already execute it on the first transcription and automatically skip the next transcription
 
     return frames, command_chainable, skip_next_transcription
 
 
-def record(skip_check_short_commands=False, short_commands_prefix="", cutoff_padding=0):
-    global audio, model
-    transcribing_window = None
-
+def start_mic_to_transcription(cutoff_padding=0, model=None):
     start_time = time.time()
-    update_queue.put(('show',))
     message_queue.put(('create_avatar', 'show'))
     message_queue.put(('create_avatar', 'set_content', "❌ Starting", "❌ Starting..."))
     elapsed_time = time.time() - start_time
     print(f"Time taken for opening transcribing window: {elapsed_time:.5f} seconds")
 
     start_time = time.time()
-    # Set global variable and play audio cue
     global_var_state.is_transcribing = "GO"
     global_var_state.recently_transcribed = True
     elapsed_time = time.time() - start_time
     print(f"Time taken for setting global variables: {elapsed_time:.5f} seconds")
 
     start_time = time.time()
-    # Get the current window
     window_id = get_active_window_id()
     elapsed_time = time.time() - start_time
     print(f"Time taken for getting the current window: {elapsed_time:.5f} seconds")
 
     start_time = time.time()
-    # Get current volume level
     prev_volume = get_volume()
     elapsed_time = time.time() - start_time
     print(f"VolumeL {prev_volume}")
@@ -197,12 +151,8 @@ def record(skip_check_short_commands=False, short_commands_prefix="", cutoff_pad
 
     frames, chainable_commands, skip_next_transcription = check_transcript_for_short_commands(stream)
 
-    start_time = time.time()
-    # Show transcribing window
-    print("Showing transcribing window...")
     silence_counter = 0
     max_it = int(RATE / CHUNK * RECORD_SECONDS)
-    offset_delay = 0
     progress_pct = 0
 
     # Define variables for the static values
@@ -254,95 +204,22 @@ def record(skip_check_short_commands=False, short_commands_prefix="", cutoff_pad
                 print("Stopped recording due to seconds of consecutive silence.")
                 break
 
+    print("Terminate audio...")
     start_time = time.time()
-    # Stop recording and close audio streams
     set_volume(prev_volume)
     stream.stop_stream()
     stream.close()
     audio.terminate()
     print_time_profile(start_time, "setting vol")
 
-    # Close transcribing window
-    global_var_state.is_transcribing = "STOP"
-
     print("Closing transcribing window...")
+    global_var_state.is_transcribing = "STOP"
     message_queue.put(('create_avatar', 'hide'))
-
-    start_time = time.time()
-    # Process audio and transcribe using Whisper model
     print("Processing audio...")
-    input_audio_duration = 4 + (progress_pct * RECORD_SECONDS)
 
-    silence_pct = 100
-
-    if input_audio_duration:
-        silence_pct = (input_audio_duration - silence_counter) / input_audio_duration
-
-    print('silence_counter', silence_counter)
-    print('silence_pct', silence_pct)
-    print('input_audio_duration', input_audio_duration)
-
-    if not skip_next_transcription and ((silence_pct < 0.98 and silence_pct > 0) or input_audio_duration > 5):
-        start_time = time.time()
-        timestamp = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-        audio_file_name = "audio"
-        audio_file_extension = "wav"
-        audio_file_with_timestamp = f"./{AUDIO_FILES_DIR}/{audio_file_name}_{timestamp}.{audio_file_extension}"
-
-        mic_stream = AudioSegment(b''.join(frames), sample_width=audio.get_sample_size(FORMAT), channels=CHANNELS,
-                                  frame_rate=RATE)
-        mic_stream.export(audio_file_with_timestamp, format="wav")
-        print_time_profile(start_time, "export audio")
-
-        # Uncomment this one if you need to here the playback
-        # pygame.mixer.Sound("/home/joshua/extrafiles/projects/openai-whisper/output.wav").play()
-
-        start_time = time.time()
-        print("Remove silences...")
-        # start_time = time.time()
-        # processed_audio_file_name = slow_down_audio(input_file=audio_file_with_timestamp)
-        processed_audio_file_name = audio_file_with_timestamp
-
-        # if input_audio_duration > 5:
-        #     processed_audio_file_name = remove_silences(audio_file_with_timestamp)
-
-        print_time_profile(start_time, "remove silences")
-
-        print("Transcribing audio...")
-
-        start_time = time.time()
+    if not skip_next_transcription:
         context_prompt = get_prompt_cache()
-
-        print_time_profile(start_time, "get prompt")
-        print("context_prompt", context_prompt)
-
-        start_time = time.time()
-        # We should skip model transcription to the audio file that will be inputted as large number of silences.
-        segments, info = model.transcribe(processed_audio_file_name, beam_size=5,
-                                          best_of=1,
-                                          temperature=0.1,
-                                          language="en",
-                                          initial_prompt=context_prompt,
-                                          without_timestamps=True,
-                                          word_timestamps=False,
-                                          vad_filter=False, vad_parameters=dict(min_silence_duration_ms=1000))
-
-        print_time_profile(start_time, "generators")
-
-        start_time = time.time()
-        result_text = ""
-        segment_end = 0
-        for segment in segments:
-            result_text = result_text + segment.text
-            segment_end = segment.end
-            print("[%.2fs -> %.2fs] %s" % (segment.start, segment.end, segment.text))
-
-        print("Showing transcribed text...")
-        print("result", result_text)
-        print("segment_end", segment_end)
-        save_transcription(result_text, timestamp)
-
-        print_time_profile(start_time, "transcription")
+        result_text = save_file_then_transcribe(frames=frames, model=model, audio=audio, context_prompt=context_prompt)
 
         print("Activate prev window...")
         start_time = time.time()
@@ -351,16 +228,13 @@ def record(skip_check_short_commands=False, short_commands_prefix="", cutoff_pad
 
         print("Analyzing transcription what command to run")
         start_time = time.time()
-
-        commands(result_text)
+        execute_plugin_by_keyword(result_text)
         print_time_profile(start_time, "run command")
 
     global_var_state.recently_transcribed = False
     return
 
 
-
-
-def save_transcription(transcription, timestamp):
-    with open(f"./{AUDIO_FILES_DIR}/transcription_{timestamp}.txt", "w") as f:
-        f.write(transcription)
+def stop_record():
+    global_var_state.should_transcribe = False
+    return

@@ -6,6 +6,7 @@ from whispering_assistant.utils.prompt import generate_initial_prompt
 from whispering_assistant.utils.transcription import model_transcribe_cache_init
 from faster_whisper import WhisperModel
 
+
 def start_up_required_libs():
     # Load Whisper model
     print("Loading Whisper model...")
@@ -26,4 +27,4 @@ def start_up_required_libs():
     context_prompt = generate_initial_prompt()
     print("context prompt loaded")
 
-    return context_prompt, audio
+    return context_prompt, audio, model

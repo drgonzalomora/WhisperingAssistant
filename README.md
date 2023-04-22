@@ -4,7 +4,8 @@ A digital assistant powered by OpenAI's Whisper Transcription Service, designed 
 
 ## 📌 Clean Up
 - ✅ Window manager common classes
-- Class inheritance for commands
+- ✅ Class inheritance for commands
+- Make sure that the server.py is working as expected
 - Add all the commands supported one by one
 - Short command logic
 - Test the server.py
