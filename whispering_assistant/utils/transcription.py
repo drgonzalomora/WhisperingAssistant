@@ -48,3 +48,27 @@ def model_transcribe(model,filepath, context_prompt, beam_size=20, best_of=2):
     print(f"The execution time for result cat is {execution_time} seconds.")
 
     return result_text
+
+def start_mic_to_transcription():
+    global_var_state.should_transcribe = True
+    global_var_state.is_transcribing = True
+
+    # Get the current window
+    window_id = subprocess.check_output(['xprop', '-root', '_NET_ACTIVE_WINDOW']).split()[-1]
+
+    audio = pyaudio.PyAudio()
+    output_file_name = record_on_mic_input(audio)
+
+    result_text = model_transcribe(model, output_file_name, context_prompt)
+
+    print("Activate prev window...")
+    subprocess.call(['xdotool', 'windowactivate', window_id])
+
+    print("Analyzing transcription what command to run")
+    execute_plugin_by_keyword(result_text)
+    global_var_state.is_transcribing = False
+    return
+
+def stop_record():
+    global_var_state.should_transcribe = False
+    return

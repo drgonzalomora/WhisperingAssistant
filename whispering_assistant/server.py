@@ -5,58 +5,19 @@ from flask import Flask
 from faster_whisper import WhisperModel
 import threading
 from whispering_assistant.states_manager import global_var_state
-from whispering_assistant.config import WhisperModel_PATH, WhisperModel_DEVICE, WhisperModel_COMPUTE, \
+from whispering_assistant.configs.config import WhisperModel_PATH, WhisperModel_DEVICE, WhisperModel_COMPUTE, \
     WhisperModel_WORKERS, PORT
 from whispering_assistant.utils.audio import record_on_mic_input
 from whispering_assistant.utils.prompt import generate_initial_prompt
-from whispering_assistant.utils.transcription import model_transcribe, model_transcribe_cache_init
+from whispering_assistant.utils.start_up_required_libs import start_up_required_libs
+from whispering_assistant.utils.transcription import model_transcribe, model_transcribe_cache_init, \
+    start_mic_to_transcription, stop_record
 from whispering_assistant.commands import execute_plugin_by_keyword
 
 # Set up Flask app
 app = Flask(__name__)
 
-# Load Whisper model
-print("Loading Whisper model...")
-model = WhisperModel(WhisperModel_PATH, device=WhisperModel_DEVICE, compute_type=WhisperModel_COMPUTE, num_workers=WhisperModel_WORKERS)
-print("Whisper model loaded successfully.")
-
-print("Loading Audio Driver")
-audio = pyaudio.PyAudio()
-print("Audio Driver Loaded")
-
-print("Do an initial transcription to load cache")
-# TODO: If no output~1.wav then generate one
-model_transcribe_cache_init(model, "output~1.wav")
-print("Cache loaded")
-
-print("Load context prompt")
-context_prompt = generate_initial_prompt()
-print("context prompt loaded")
-
-
-def start_mic_to_transcription():
-    global_var_state.should_transcribe = True
-    global_var_state.is_transcribing = True
-
-    # Get the current window
-    window_id = subprocess.check_output(['xprop', '-root', '_NET_ACTIVE_WINDOW']).split()[-1]
-
-    audio = pyaudio.PyAudio()
-    output_file_name = record_on_mic_input(audio)
-
-    result_text = model_transcribe(model, output_file_name, context_prompt)
-
-    print("Activate prev window...")
-    subprocess.call(['xdotool', 'windowactivate', window_id])
-
-    print("Analyzing transcription what command to run")
-    execute_plugin_by_keyword(result_text)
-    global_var_state.is_transcribing = False
-    return
-
-def stop_record():
-    global_var_state.should_transcribe = False
-    return
+start_up_required_libs()
 
 
 @app.route('/', methods=['GET'])
