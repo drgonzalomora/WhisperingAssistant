@@ -7,3 +7,4 @@ whispering_assistant/prompt.json
 /whispering_assistant/assets/ml/whisper-large-v2-ct2/
 /whisper-large-v2-ct2/
 /.conda-activate
+/whispering_assistant/assets/docs/**.json

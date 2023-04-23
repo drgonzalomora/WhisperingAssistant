@@ -12,3 +12,4 @@ flask~=2.2.3
 pyqt5~=5.15.9
 pvporcupine~=2.2.0
 pvrecorder~=1.1.1
+fuzzywuzzy~=0.18.0

@@ -12,6 +12,7 @@ from whispering_assistant.window_managers.windows.choice_window import ChoiceWin
 
 create_avatar_window = None
 
+
 class SubWindow(QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -23,6 +24,7 @@ class SubWindow(QMainWindow):
     def closeEvent(self, event):
         event.ignore()
         self.hide()
+
 
 class MyPtQtApp(QMainWindow):
     def __init__(self, message_queue):

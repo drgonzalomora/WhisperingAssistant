@@ -9,8 +9,7 @@ from whispering_assistant.window_managers.windows.base_window_template import Ba
 
 class ChoiceWindow(BaseWindowTemplate):
     def __init__(self, parent=None, choices=[], process_cb=None):
-        super().__init__(parent)
-        self.initUI(choices=choices, process_cb=process_cb)
+        super().__init__(parent, choices=choices, process_cb=process_cb)
 
     def initUI(self, choices, process_cb):
         self.setWindowTitle("Select the desired link")

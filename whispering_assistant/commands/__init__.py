@@ -77,6 +77,7 @@ def execute_plugin_by_keyword(text, *args, **kwargs):
         if plugin.trigger.lower() != FALL_BACK_COMMAND:
             match, text_parameter = check_strings(text.lower(), plugin.keywords)
             if match:
+                print('running plugin', plugin.trigger.lower())
                 plugin.run(*args, text_parameter=text_parameter, **kwargs)
                 found = True
                 break
