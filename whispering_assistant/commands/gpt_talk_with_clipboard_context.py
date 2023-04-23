@@ -102,15 +102,20 @@ class TalkGPTWithClipboardContext(BaseCommand):
                 "subject": ["nora", "ruby"]}
 
     def run(self, text_parameter, raw_text, *args, **kwargs):
-        curr_clipboard = pyperclip.paste()
-        modified_text = curr_clipboard
+        modified_text = text_parameter
+
         chatgpt_type = 'GPT4' if GPT4_ALIAS in raw_text.lower() else 'GPT3'
+        keywords = ['clipboard', 'context', 'relation']
+        clipboard_needed = any(keyword in raw_text.lower() for keyword in keywords)
 
         # Handle Clipboard injection
-        if text_parameter:
-            modified_text = "Context:\n" + "```\n" + curr_clipboard + "\n```\n" + text_parameter
+        if clipboard_needed:
+            curr_clipboard = pyperclip.paste()
+            modified_text = curr_clipboard
 
-        # TODO: Handle normal questions without clipboard
+            if text_parameter:
+                modified_text = "Context:\n" + "```\n" + curr_clipboard + "\n```\n" + text_parameter
+
         # TODO: Handle comms without creating new conversation
 
         send_question_to_gpt(modified_text, gpt_type=chatgpt_type, check_gpt_type=True)

@@ -44,7 +44,7 @@ def check_strings(text, keywords, raw_text=""):
     action_length = 0
 
     words = text.split()
-    limit_to_five_words = " ".join(words[:5]).lower()
+    limit_to_five_words = " ".join(words[:10]).lower()
 
     for action in keywords['action']:
         index_with_spaces = limit_to_five_words.find(action)
