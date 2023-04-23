@@ -13,7 +13,7 @@ class InfoWindow(BaseWindowTemplate):
         super().__init__(parent)
 
     def initUI(self, title="Info", width=300, height=300,
-               media_path="whispering_assistant/assets/videos/ARA_AVATAR.mp4"):
+               media_path="/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/videos/ARA_AVATAR.mp4"):
         self.setWindowTitle(title)
         self.setGeometry(0, 0, width, height)
 
@@ -37,7 +37,7 @@ class InfoWindow(BaseWindowTemplate):
         self.media_player.mediaStatusChanged.connect(self.loop_video)
         self.hide()
 
-    def set_content(self, title, text, media_path="/home/joshua/extrafiles/projects/openai-whisper/ARA_AVATAR.mp4"):
+    def set_content(self, title, text, media_path="/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/videos/ARA_AVATAR.mp4"):
         self.setWindowTitle(title)
         self.text_label.setText(text)
 

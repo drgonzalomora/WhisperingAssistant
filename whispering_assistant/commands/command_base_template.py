@@ -30,6 +30,6 @@ class BaseCommand(ABC):
     }
 
     @abstractmethod
-    def run(self, *args, **kwargs):
+    def run(self, text_parameter, *args, **kwargs):
         """Execute the desired action for the command plugin."""
         pass

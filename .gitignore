@@ -6,3 +6,4 @@ whispering_assistant/prompt.json
 /whispering_assistant/training_data/
 /whispering_assistant/assets/ml/whisper-large-v2-ct2/
 /whisper-large-v2-ct2/
+/.conda-activate
