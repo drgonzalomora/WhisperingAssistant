@@ -3,9 +3,9 @@ import subprocess
 from whispering_assistant.commands.command_base_template import BaseCommand, command_types
 from whispering_assistant.utils.fuzzy_json_show_dialog import fuzzy_search_json
 
-return_keys = ["link", "url", "dir"]
+return_keys = ["link", "url"]
 search_keys = ["name", "url", "title", "label", "link"]
-name_keys = ["name", "title", "label", "dir"]
+name_keys = ["name", "title", "label"]
 json_files = [
     "/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/docs/links_list.json",
     "/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/docs/history_output.json",

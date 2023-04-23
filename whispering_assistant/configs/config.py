@@ -53,4 +53,6 @@ toggl_workspace_id = os.environ.get("toggl_workspace_id")
 # Training Data
 AUDIO_FILES_DIR = "training_data"
 
-
+# Knowledge Files
+AUTOJUMP_FILE = os.path.expanduser("~/.local/share/autojump/autojump.txt")
+AUTOJUMP_JSON_FILE = "../assets/docs/autojump_stats.json"
