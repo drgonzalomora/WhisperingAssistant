@@ -103,7 +103,7 @@ def check_transcript_for_short_commands(stream, model, audio):
     skip_next_transcription = False
     run_short_command = False
 
-    if 'cancel' in result_text.lower() or not result_text:
+    if 'cancel' in result_text.lower():
         skip_next_transcription = True
         run_short_command = True
 

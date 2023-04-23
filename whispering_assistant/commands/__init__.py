@@ -73,9 +73,14 @@ def check_strings(text, keywords):
 
 def execute_plugin_by_keyword(text, *args, **kwargs):
     found = False
+
+    words = text.split()
+    limit_to_five_words = " ".join(words[:5])
+    print(limit_to_five_words)
+
     for plugin in COMMAND_PLUGINS.values():
         if plugin.trigger.lower() != FALL_BACK_COMMAND:
-            match, text_parameter = check_strings(text.lower(), plugin.keywords)
+            match, text_parameter = check_strings(limit_to_five_words.lower(), plugin.keywords)
             if match:
                 print('running plugin', plugin.trigger.lower())
                 plugin.run(*args, text_parameter=text_parameter, **kwargs)
