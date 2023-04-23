@@ -17,12 +17,8 @@ from whispering_assistant.utils.window_dialogs import activate_window, get_activ
 
 
 def model_transcribe_cache_init(model, filepath, beam_size=1, best_of=1):
-    segments, info = model.transcribe(filepath, beam_size=beam_size,
-                                      best_of=best_of,
-                                      temperature=0,
-                                      language="en",
-                                      without_timestamps=True,
-                                      word_timestamps=False)
+    segments, info = model.transcribe(filepath, beam_size=beam_size, best_of=best_of, temperature=0, language="en",
+                                      without_timestamps=True, word_timestamps=False)
     segments = list(segments)
     print("segments", segments)
     return segments
@@ -51,17 +47,10 @@ def save_file_then_transcribe(frames, model, audio, context_prompt, transcriptio
     print("💡Transcribing audio...")
 
     start_time = time.time()
-    segments, info = model.transcribe(processed_audio_file_name,
-                                      beam_size=5,
-                                      best_of=1,
-                                      temperature=0.1,
-                                      language="en",
-                                      initial_prompt=context_prompt,
-                                      without_timestamps=True,
-                                      word_timestamps=False,
+    segments, info = model.transcribe(processed_audio_file_name, beam_size=5, best_of=1, temperature=0.1, language="en",
+                                      initial_prompt=context_prompt, without_timestamps=True, word_timestamps=False,
                                       vad_filter=False, vad_parameters=dict(min_silence_duration_ms=1000),
-                                      **transcription_args,
-                                      )
+                                      **transcription_args, )
     print_time_profile(start_time, "generators")
 
     start_time = time.time()
@@ -110,7 +99,8 @@ def check_transcript_for_short_commands(stream, model, audio):
     if run_short_command:
         execute_plugin_by_keyword(result_text)
 
-    # 📌 TODO: for one-shot commands or short commands, I think we can already execute it on the first transcription and automatically skip the next transcription
+    # 📌 TODO: for one-shot commands or short commands,
+    #  I think we can already execute it on the first transcription and automatically skip the next transcription
 
     return frames, command_chainable, skip_next_transcription
 
@@ -147,9 +137,12 @@ def start_mic_to_transcription(cutoff_padding=0, model=None):
     elapsed_time = time.time() - start_time
     print(f"Time taken for recording audio: {elapsed_time:.5f} seconds")
 
-    frames, chainable_commands, skip_next_transcription = check_transcript_for_short_commands(stream, audio=audio, model=model)
+    frames, chainable_commands, skip_next_transcription = check_transcript_for_short_commands(stream, audio=audio,
+                                                                                              model=model)
 
     silence_counter = 0
+    silence_reset_counter = 0
+    silence_reset_counter_threshold = 0.5
     max_it = int(RATE / CHUNK * RECORD_SECONDS)
     progress_pct = 0
 
@@ -159,7 +152,7 @@ def start_mic_to_transcription(cutoff_padding=0, model=None):
     MIN_SCALING = 1
     MAX_SCALING = 2
 
-    SCALING_FACTOR_SHORT_COMMANDS = 1 if chainable_commands else 2
+    SCALING_FACTOR_SHORT_COMMANDS = 1 if chainable_commands else 1.5
 
     if not skip_next_transcription:
         for i in range(0, max_it):
@@ -180,21 +173,23 @@ def start_mic_to_transcription(cutoff_padding=0, model=None):
                 scaling_factor = 1 + cutoff_padding
             else:
                 scaling_factor = SCALING_FACTOR_SHORT_COMMANDS + (progress_pct - LOWER_BOUND) * (
-                        MAX_SCALING - MIN_SCALING) / (
-                                         UPPER_BOUND - LOWER_BOUND)
+                        MAX_SCALING - MIN_SCALING) / (UPPER_BOUND - LOWER_BOUND)
 
             # Auto cutoff on silence with dynamic CONSECUTIVE_SILENCE_CHUNKS
             current_audio = b''.join([data])
             audio_segment = AudioSegment(data=current_audio, sample_width=audio.get_sample_size(FORMAT),
-                                         frame_rate=RATE,
-                                         channels=CHANNELS)
+                                         frame_rate=RATE, channels=CHANNELS)
             is_silent = detect_silence(audio_segment, min_silence_len=180, silence_thresh=SILENCE_THRESHOLD)
             print("is_silent", is_silent)
+            print("📍 silence_counter", silence_counter, silence_reset_counter)
 
             if is_silent:
                 silence_counter += 0.1
-            else:
+                silence_reset_counter = 0
+            elif silence_reset_counter > silence_reset_counter_threshold:
                 silence_counter = 0
+            else:
+                silence_reset_counter += 0.1
 
             # Check for consecutive silence
             print('scaling_factor', CONSECUTIVE_SILENCE_CHUNKS * scaling_factor)
