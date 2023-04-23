@@ -2,7 +2,7 @@ import json
 
 from PyQt5.QtWidgets import QTextEdit, QLabel, QPushButton
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout
+from PyQt5.QtWidgets import QWidget, QVBoxLayout
 
 from whispering_assistant.utils.prompt import generate_prompt
 from whispering_assistant.window_managers.windows.base_window_template import BaseWindowTemplate
@@ -14,14 +14,14 @@ def update_prompt_dict(text):
     unique_words = list(set(words))
 
     # Read the JSON file
-    with open('whispering_assistant/assets/docs/prompt.json', 'r') as f:
+    with open('/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/docs/prompt.json', 'r') as f:
         prompt_dict = json.load(f)
 
     # Append the unique words to the "technical_terms" list
     prompt_dict["technical_terms"].extend(unique_words)
 
     # Write the updated JSON back to the file
-    with open('whispering_assistant/assets/docs/prompt.json', 'w') as f:
+    with open('/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/docs/prompt.json', 'w') as f:
         json.dump(prompt_dict, f, indent=2)
 
     generate_prompt()
@@ -29,10 +29,11 @@ def update_prompt_dict(text):
 
 
 class TextInputProcessingApp(BaseWindowTemplate):
+    text_input = None
+    processing_function = None
+
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.text_input = None
-        self.processing_function = None
 
     def initUI(self):
         self.processing_function = update_prompt_dict

@@ -54,7 +54,7 @@ def generate_initial_prompt():
 
 def generate_prompt():
     global initial_prompt_cache
-    with open('prompt.json', 'r') as file:
+    with open('/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/docs/prompt.json', 'r') as file:
         data = json.load(file)
 
     people_names_formatted = format_variables(unique_words_in_list(data['people_names']))
