@@ -43,12 +43,11 @@ def watch_audio_for_hotword():
             result1 = -1
 
             # Checking previous frame increases the accuracy incase pcm was processed midway of speech
-            if prev_pcm:
-                result1 = porcupine.process(prev_pcm)
+            # if prev_pcm:
+            #     result1 = porcupine.process(prev_pcm)
 
             result = porcupine.process(pcm)
-
-            prev_pcm = pcm
+            # prev_pcm = pcm
             # print(result, result1, result2)
 
             if result >= 0 or result1 >= 0:

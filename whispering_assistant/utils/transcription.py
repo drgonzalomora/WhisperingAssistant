@@ -86,7 +86,7 @@ def check_transcript_for_short_commands(stream, model, audio):
     # 📌 TODO: Replace this with a function
     context_prompt = "lock screen"
     result_text = save_file_then_transcribe(frames=frames, model=model, audio=audio, context_prompt=context_prompt)
-    plugin_used = execute_plugin_by_keyword(result_text, run_command=False)
+    plugin_used = execute_plugin_by_keyword(result_text, run_command=False, skip_fallback=True)
 
     command_chainable = False
     skip_next_transcription = False
