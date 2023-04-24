@@ -40,7 +40,7 @@ WhisperModel_PATH = "/home/joshua/extrafiles/projects/WhisperingAssistant/whispe
 WhisperModel_COMPUTE = "int8_float16"
 
 # Hot Word
-hot_word_keywords = ['hey quantum']
+hot_word_keywords = ['hey victoria']
 hot_word_sensitivities = [1.0]
 hot_word_keyword_paths = [os.environ.get("hot_word_keyword_paths")]
 hot_word_INTERVAL = 0.5
