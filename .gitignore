@@ -8,3 +8,4 @@ whispering_assistant/prompt.json
 /whisper-large-v2-ct2/
 /.conda-activate
 /whispering_assistant/assets/docs/**.json
+/whispering_assistant/assets/ml/**.ppn

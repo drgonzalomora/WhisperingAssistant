@@ -6,6 +6,7 @@ from pydub import AudioSegment
 from pydub.silence import detect_silence
 
 from whispering_assistant.commands import execute_plugin_by_keyword
+from whispering_assistant.commands.command_base_template import command_types
 from whispering_assistant.configs.config import AUDIO_FILES_DIR, CHANNELS, RATE, CHUNK, FORMAT, RECORD_SECONDS, \
     SILENCE_THRESHOLD, CONSECUTIVE_SILENCE_CHUNKS
 from whispering_assistant.states_manager import global_var_state
@@ -71,8 +72,6 @@ def save_file_then_transcribe(frames, model, audio, context_prompt, transcriptio
 
 
 def check_transcript_for_short_commands(stream, model, audio):
-    start_time = time.time()
-    # Show transcribing window
     print("Showing transcribing window...")
     max_time_check_short_command = 4
     frames = []
@@ -84,23 +83,22 @@ def check_transcript_for_short_commands(stream, model, audio):
         data = stream.read(CHUNK)
         frames.append(data)
 
-    # TODO: Replace this with a function
+    # 📌 TODO: Replace this with a function
     context_prompt = "lock screen"
     result_text = save_file_then_transcribe(frames=frames, model=model, audio=audio, context_prompt=context_prompt)
+    plugin_used = execute_plugin_by_keyword(result_text, run_command=False)
 
     command_chainable = False
     skip_next_transcription = False
-    run_short_command = False
 
     if 'cancel' in result_text.lower():
         skip_next_transcription = True
-        run_short_command = True
 
-    if run_short_command:
-        execute_plugin_by_keyword(result_text)
+    if getattr(plugin_used, 'command_type', None) == command_types['ONE_SHOT']:
+        execute_plugin_by_keyword(result_text, run_command=True, skip_fallback=True)
+        skip_next_transcription = True
 
-    # 📌 TODO: for one-shot commands or short commands,
-    #  I think we can already execute it on the first transcription and automatically skip the next transcription
+    # 📌 TODO: Change wait time based on command type
 
     return frames, command_chainable, skip_next_transcription
 

@@ -81,8 +81,10 @@ def check_strings(text, keywords, raw_text=""):
     return (action_found and subject_found and action_index < subject_index), remove_special_chars_regex(text_parameter)
 
 
-def execute_plugin_by_keyword(text, *args, **kwargs):
+def execute_plugin_by_keyword(text, run_command=True, skip_fallback=False, *args, **kwargs):
     found = False
+    plugin_used = None
+
     result_text_lower = text.lower().lstrip()
     words_array = [word.strip() for word in re.split(r'[^\w\s]+|(?<=\s)', result_text_lower) if word.strip()]
     words_cleaned = ' '.join(words_array)
@@ -92,15 +94,21 @@ def execute_plugin_by_keyword(text, *args, **kwargs):
         if plugin.trigger.lower() != FALL_BACK_COMMAND:
             match, text_parameter = check_strings(words_cleaned, plugin.keywords, raw_text=result_text_lower)
             if match:
+                plugin_used = plugin
                 print('running plugin', plugin.trigger.lower())
-                plugin.run(*args, text_parameter=text_parameter, raw_text=text, **kwargs)
+
+                if run_command:
+                    plugin.run(*args, text_parameter=text_parameter, raw_text=text, **kwargs)
+
                 found = True
                 break
 
     if not found:
         print(f"No plugin found for text: {text}")
         fallback_plugin = COMMAND_PLUGINS.get(FALL_BACK_COMMAND.lower())
-        if fallback_plugin:
+        if not skip_fallback and fallback_plugin:
             fallback_plugin.run(*args, text_parameter=text, raw_text=text, **kwargs)
         else:
             print("No fallback plugin found.")
+
+    return plugin_used
