@@ -2,51 +2,43 @@
 A digital assistant powered by OpenAI's Whisper Transcription Service, designed to run on gaming laptop. This project aims to facilitate voice-based interactions, transcribe audio in real-time, and perform various tasks to enhance productivity and user experience.
 
 
-## 📌 Packages
-
-how to install
-- install conda
-- install dependencies for conda and pip. Use script
+## 📌 How to install
+- Install conda (23.3.1)
+- Use the script to install dependencies for conda and pip
 ```commandline
 ./install.sh
 ```
 
+## 📌 TODOs
+- Custom cut off time based on command type
+- Support on GPT for continuing the conversation instead of just creating a new one.
+- Add support for dynamic prompting and more better prompting depending on the context.
+  - We can use different parameters like the current active window, the content of the clipboard, some keywords used or detected during the first 4 seconds of transcription.
+
 ## 📌 Clean Up
-- ✅ Window manager common classes
-- ✅ Class inheritance for commands
-- ✅ Make sure that the server.py is working as expected
-- ✅ Add all the commands supported one by one
-- ✅ Short command logic
-- ✅ Test the server.py
+- Specify all the versions for all the dependencies to make sure that the project is easily replicable even in the future.
+- Clean up hard coded dirs
+- Clean up ReadMe file 
+  - System requirements
+  - Specify all the assumptions and dependencies being used in the project.
+- Allow all configuration files to be operating by using the .env file
 
 ## 📌 Core Goals
 **Primary**
-- offline first. basic commands works offline
+- Offline first. basic commands works offline
   - vision, transcription and small NLP agents, hotword detection
-- complex task offloaded to online LLMs
-- good caching, no need to repeat LLM calls for similar query
-- shareable knowledge base (semantic search for common commands)
+- Complex task offloaded to online LLMs
+- Good caching, no need to repeat LLM calls for similar query (📍 It might be better to just put this on another repository which just focuses on this feature.)
+- Shareable knowledge base (semantic search for common commands)
 
 **Secondary**
-- add a voice
-- integrate with IoT devices
+- Add a voice (TTS)
+- Integrate with IoT devices
 
-
-
-## 📌 Pending for MVP
-
+## 📌 Nice to haves
 - ⏳️ Embeddings for text commands
-- ⏳️ create embeddings for the argument, perhaps some sort of caching for audio.
-- ⏳ Move all UI to pyqt5
-
-🚥🚥🚥 
-- ✅ Commands
+- ⏳️ Create embeddings for the argument, perhaps some sort of caching for audio.
+- Move all UI to pyqt5
 - Dictation Mode
-- Plugin Development Archi
-- ✅ Saving recordings locally for fine-tuning 
-- ENV files
-- Guide on dependency and what to install
-- System requirements
 - Redis/VectorDB for caching
-- ChatGPT integration for intent parsing
-- ✅ hot word detection integration
+- ChatGPT's integration for intent parsing

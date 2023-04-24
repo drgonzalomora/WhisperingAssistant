@@ -3,7 +3,7 @@ import pyperclip
 import time
 import subprocess
 
-x2, y2, width2, height2 = 630, 900, 1600, 1200
+x2, y2, width2, height2 = 0, 540, 1920, 1080
 region2 = (x2, y2, width2, height2)
 image2 = '/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/images/CHAT_BOX.png'
 
@@ -12,10 +12,10 @@ def paste_input():
 
     curr_clipboard = pyperclip.paste()
     # Look for image2 on the screen
-    image2_location = pyautogui.locateOnScreen(image2, region=region2, confidence=0.8)
+    image2_location = pyautogui.locateOnScreen(image2, region=region2, confidence=0.5)
 
     if image2_location is not None:
-        print(f"Image 2 found at {image2_location}")
+        print(f"Image 2 chat box found at {image2_location}")
 
         # Click on the center of image2
         image2_center = pyautogui.center(image2_location)
@@ -29,7 +29,7 @@ def paste_input():
         pyautogui.press('enter')
         print("Typing and pressing enter done.")
     else:
-        print("Image 2 not found on the screen.")
+        print("Image 2 chat box not found on the screen.")
         # Simulate pressing Ctrl+V
 
         pyautogui.hotkey('ctrl', 'v')
@@ -55,10 +55,11 @@ class TypeInput(BaseCommand):
     trigger = FALL_BACK_COMMAND
 
     def run(self, *args, text_parameter="", **kwargs):
-        old_clipboard = pyperclip.paste()
-        pyperclip.copy(text_parameter)
+        old_clipboard = pyperclip.paste().lstrip()
+        pyperclip.copy(text_parameter.lstrip())
         time.sleep(0.5)
         paste_input()
+        time.sleep(0.3)
         pyperclip.copy(old_clipboard)
         action_done = "clipboard_type_input"
         return action_done
