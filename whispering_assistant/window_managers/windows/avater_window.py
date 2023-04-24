@@ -1,4 +1,3 @@
-import queue
 import time
 from PyQt5.QtCore import QUrl
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel
@@ -35,9 +34,11 @@ class InfoWindow(BaseWindowTemplate):
 
         # Connect mediaStatusChanged signal to the loop_video method
         self.media_player.mediaStatusChanged.connect(self.loop_video)
+        self.media_player.error.connect(self.handle_error)
         self.hide()
 
-    def set_content(self, title, text, media_path="/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/videos/ARA_AVATAR.mp4"):
+    def set_content(self, title, text,
+                    media_path="/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/videos/ARA_AVATAR.mp4"):
         self.setWindowTitle(title)
         self.text_label.setText(text)
 
@@ -55,5 +56,19 @@ class InfoWindow(BaseWindowTemplate):
 
     def loop_video(self, status):
         if status == QMediaPlayer.EndOfMedia:
+            print("End of media reached, looping video...")
             self.media_player.setPosition(0)
             self.media_player.play()
+        elif status == QMediaPlayer.InvalidMedia:
+            print("Invalid media")
+        elif status == QMediaPlayer.BufferedMedia:
+            print("Media buffered")
+        elif status == QMediaPlayer.LoadingMedia:
+            print("Loading media")
+        elif status == QMediaPlayer.StalledMedia:
+            print("Media stalled")
+        elif status == QMediaPlayer.UnknownMediaStatus:
+            print("Unknown media status")
+
+    def handle_error(self):
+        print("Error: " + self.media_player.errorString())

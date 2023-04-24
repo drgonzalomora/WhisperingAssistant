@@ -2,13 +2,22 @@
 A digital assistant powered by OpenAI's Whisper Transcription Service, designed to run on gaming laptop. This project aims to facilitate voice-based interactions, transcribe audio in real-time, and perform various tasks to enhance productivity and user experience.
 
 
+## 📌 Packages
+
+how to install
+- install conda
+- install dependencies for conda and pip. Use script
+```commandline
+./install.sh
+```
+
 ## 📌 Clean Up
 - ✅ Window manager common classes
 - ✅ Class inheritance for commands
-- Make sure that the server.py is working as expected
-- Add all the commands supported one by one
-- Short command logic
-- Test the server.py
+- ✅ Make sure that the server.py is working as expected
+- ✅ Add all the commands supported one by one
+- ✅ Short command logic
+- ✅ Test the server.py
 
 ## 📌 Core Goals
 **Primary**

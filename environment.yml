@@ -1,0 +1,27 @@
+channels:
+  - conda-forge
+  - nvidia
+dependencies:
+  - python=3.9.16
+  - nvidia::cudatoolkit
+  - nvidia::cuda-nvcc
+  - conda-forge::cudnn=8.4.1.50
+  - pip
+  - pip:
+    - flask
+    - xlib
+    - pyqt5
+    - pyautogui
+    - pvporcupine
+    - pvrecorder
+    - pyaudio
+    - python-dotenv
+    - pydub
+    - pyperclip
+    - fuzzywuzzy
+    - pulsectl
+    - pyautogui
+    - pillow
+    - python-levenshtein
+    - opencv-python
+    - git+https://github.com/guillaumekln/faster-whisper.git@master
