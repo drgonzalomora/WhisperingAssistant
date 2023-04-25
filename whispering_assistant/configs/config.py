@@ -41,7 +41,7 @@ WhisperModel_COMPUTE = "int8_float16"
 
 # Hot Word
 hot_word_keywords = ['hey victoria']
-hot_word_sensitivities = [0.8]
+hot_word_sensitivities = [0.9]
 hot_word_keyword_paths = [os.environ.get("hot_word_keyword_paths")]
 hot_word_INTERVAL = 0.5
 

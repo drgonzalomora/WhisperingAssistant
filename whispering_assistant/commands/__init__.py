@@ -112,3 +112,28 @@ def execute_plugin_by_keyword(text, run_command=True, skip_fallback=False, *args
             print("No fallback plugin found.")
 
     return plugin_used
+
+
+prompts_for_short_commands_cache = None
+
+
+def generate_prompts_for_short_commands():
+    global prompts_for_short_commands_cache
+
+    if prompts_for_short_commands_cache:
+        return prompts_for_short_commands_cache
+
+    command_list = []
+
+    for plugin in COMMAND_PLUGINS.values():
+        command_list.extend(plugin.keywords['action'])
+        command_list.extend(plugin.keywords['subject'])
+
+    command_list = list(dict.fromkeys(command_list))
+    command_list = [command for command in command_list if command != ""]
+    command_list = ",".join(command_list)
+    command_list = f"command list: {command_list}"
+
+    print(command_list)
+    prompts_for_short_commands_cache = command_list
+    return command_list

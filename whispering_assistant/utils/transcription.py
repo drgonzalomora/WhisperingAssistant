@@ -5,7 +5,7 @@ import pyaudio
 from pydub import AudioSegment
 from pydub.silence import detect_silence
 
-from whispering_assistant.commands import execute_plugin_by_keyword
+from whispering_assistant.commands import execute_plugin_by_keyword, generate_prompts_for_short_commands
 from whispering_assistant.commands.command_base_template import command_types
 from whispering_assistant.configs.config import AUDIO_FILES_DIR, CHANNELS, RATE, CHUNK, FORMAT, RECORD_SECONDS, \
     SILENCE_THRESHOLD, CONSECUTIVE_SILENCE_CHUNKS
@@ -83,8 +83,7 @@ def check_transcript_for_short_commands(stream, model, audio):
         data = stream.read(CHUNK)
         frames.append(data)
 
-    # 📌 TODO: Replace this with a function
-    context_prompt = "lock screen"
+    context_prompt = generate_prompts_for_short_commands()
     result_text = save_file_then_transcribe(frames=frames, model=model, audio=audio, context_prompt=context_prompt)
     plugin_used = execute_plugin_by_keyword(result_text, run_command=False, skip_fallback=True)
 
