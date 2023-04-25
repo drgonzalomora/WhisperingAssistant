@@ -98,7 +98,7 @@ def send_question_to_gpt(query, new_conversation=False, gpt_type='GPT3', check_g
 class TalkGPTWithClipboardContext(BaseCommand):
     trigger = "talk_gpt_with_clipboard_context"
     command_type = command_types['CHAINABLE_LONG']
-    keywords = {"action": ["clipboard", "error", "context", "text", "condition", "relation", "question"],
+    keywords = {"action": ["relation", "clipboard", "error", "context", "condition", "question"],
                 "subject": ["nora", "ruby"]}
 
     def run(self, text_parameter, raw_text, *args, **kwargs):

@@ -45,6 +45,7 @@ def check_strings(text, keywords, raw_text=""):
 
     words = text.split()
     limit_to_five_words = " ".join(words[:10]).lower()
+    print("limit_to_five_words", limit_to_five_words)
 
     for action in keywords['action']:
         index_with_spaces = limit_to_five_words.find(action)
@@ -77,7 +78,9 @@ def check_strings(text, keywords, raw_text=""):
     elif action_found and action_length > 0:
         text_parameter = raw_text[action_index + action_length:]
 
-    # print("action_found", action_found,subject_found,subject_index,action_index, text_parameter)
+    # 📌 TODO: fix this such that if at least one of the action is already before the subject, this should return true
+    # print("action_found", action_found, subject_found, action_index, subject_index, (action_found and subject_found and action_index < subject_index),
+    #       text_parameter)
     return (action_found and subject_found and action_index < subject_index), remove_special_chars_regex(text_parameter)
 
 
@@ -88,10 +91,11 @@ def execute_plugin_by_keyword(text, run_command=True, skip_fallback=False, *args
     result_text_lower = text.lower().lstrip()
     words_array = [word.strip() for word in re.split(r'[^\w\s]+|(?<=\s)', result_text_lower) if word.strip()]
     words_cleaned = ' '.join(words_array)
-    print(result_text_lower, words_array, words_cleaned)
+    print("result_text_lower", result_text_lower, words_array, words_cleaned)
 
     for plugin in COMMAND_PLUGINS.values():
         if plugin.trigger.lower() != FALL_BACK_COMMAND:
+            print("words_cleaned check for plugin", words_cleaned)
             match, text_parameter = check_strings(words_cleaned, plugin.keywords, raw_text=result_text_lower)
             if match:
                 plugin_used = plugin
