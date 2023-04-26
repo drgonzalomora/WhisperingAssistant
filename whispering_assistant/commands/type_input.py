@@ -12,7 +12,7 @@ def paste_input():
 
     curr_clipboard = pyperclip.paste()
     # Look for image2 on the screen
-    image2_location = pyautogui.locateOnScreen(image2, region=region2, confidence=0.5)
+    image2_location = pyautogui.locateOnScreen(image2, region=region2, confidence=0.8)
 
     if image2_location is not None:
         print(f"Image 2 chat box found at {image2_location}")

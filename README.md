@@ -10,10 +10,13 @@ A digital assistant powered by OpenAI's Whisper Transcription Service, designed 
 ```
 
 ## 📌 TODOs
-- Custom cut off time based on command type
-- Support on GPT for continuing the conversation instead of just creating a new one.
-- Add support for dynamic prompting and more better prompting depending on the context.
+- Add support for dynamic prompting and better prompting depending on the context.
   - We can use different parameters like the current active window, the content of the clipboard, some keywords used or detected during the first 4 seconds of transcription.
+- Support on GPT for continuing the conversation instead of just creating a new one.
+- Custom cut off time based on command type
+- If transcription is done in quick succession, it could mean that the previous transcription is incorrect.
+- Pass false positive hot-word to ASR
+- Automatic muting of hot-word
 
 ## 📌 Clean Up
 - Specify all the versions for all the dependencies to make sure that the project is easily replicable even in the future.

@@ -1,6 +1,7 @@
 import json
 import re
 from whispering_assistant.states_manager.window_manager_messages import message_queue
+import yaml
 
 initial_prompt_cache = None
 
@@ -54,7 +55,8 @@ def generate_initial_prompt():
 
 def generate_prompt():
     global initial_prompt_cache
-    with open('/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/docs/prompt.json', 'r') as file:
+    with open('/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/docs/prompt.json',
+              'r') as file:
         data = json.load(file)
 
     people_names_formatted = format_variables(unique_words_in_list(data['people_names']))
@@ -92,8 +94,42 @@ def get_prompt_cache():
     return initial_prompt_cache
 
 
-# 📌 TODO Change the initial prompt based on the context-aware prompt done on the first transcription
-def get_context_aware_prompt():
-    return 'sample commands: pycharm, dictation mode, open link, short command, continuous mode'
+def load_keywords_from_keyword_yml_file(
+        file_path='/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/docs/prompt.yml'):
+    with open(file_path, 'r') as file:
+        keywords_data = yaml.safe_load(file)
+    return keywords_data
 
-# generate_prompt()
+
+def find_related_keywords_from_category_list(input_string, keywords_data, ignore_categories=None):
+    if ignore_categories is None:
+        ignore_categories = []
+
+    related_keywords = []
+    ignored_categories = {}
+
+    for category, keywords in keywords_data.items():
+        if category in ignore_categories:
+            ignored_categories[category] = keywords
+            continue
+
+        if any(keyword.lower() in input_string.lower() for keyword in keywords):
+            related_keywords.extend(keywords)
+
+    return related_keywords, ignored_categories
+
+
+def generate_related_keywords_prompt(input_string):
+    keywords_data = load_keywords_from_keyword_yml_file()
+    related_keywords, ignored_categories = find_related_keywords_from_category_list(input_string, keywords_data,
+                                                                                    ignore_categories=[
+                                                                                        'frequent_misspelled'])
+
+    print("related_keywords", related_keywords)
+    frequent_misspelled = ignored_categories['frequent_misspelled']
+    final_string = f"topics about {', '.join(frequent_misspelled + related_keywords)}."
+    print("final_string", final_string)
+
+    return final_string
+
+# generate_related_keywords_prompt('testing the new keyword feature')
