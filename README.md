@@ -10,11 +10,9 @@ A digital assistant powered by OpenAI's Whisper Transcription Service, designed 
 ```
 
 ## 📌 TODOs
-- Add support for dynamic prompting and better prompting depending on the context.
-  - We can use different parameters like the current active window, the content of the clipboard, some keywords used or detected during the first 4 seconds of transcription.
-- Support on GPT for continuing the conversation instead of just creating a new one.
 - Custom cut off time based on command type
 - If transcription is done in quick succession, it could mean that the previous transcription is incorrect.
+- Create some kind of prompt injection for the GPT plugin.
 - Pass false positive hot-word to ASR
 - Automatic muting of hot-word
 
@@ -41,6 +39,7 @@ A digital assistant powered by OpenAI's Whisper Transcription Service, designed 
 ## 📌 Nice to haves
 - ⏳️ Embeddings for text commands
 - ⏳️ Create embeddings for the argument, perhaps some sort of caching for audio.
+- Using clipboard, OCR, and active window to give better prompt to whisper
 - Move all UI to pyqt5
 - Dictation Mode
 - Redis/VectorDB for caching

@@ -98,15 +98,20 @@ def send_question_to_gpt(query, new_conversation=False, gpt_type='GPT3', check_g
 class TalkGPTWithClipboardContext(BaseCommand):
     trigger = "talk_gpt_with_clipboard_context"
     command_type = command_types['CHAINABLE_LONG']
-    keywords = {"action": ["relation", "clipboard", "error", "context", "condition", "question"],
-                "subject": ["nora", "ruby"]}
+    keywords = {
+        "action": ["relation", "clipboard", "context", "question"],
+        "subject": ["nora", "ruby"]
+    }
 
     def run(self, text_parameter, raw_text, *args, **kwargs):
         modified_text = text_parameter
 
         chatgpt_type = 'GPT4' if GPT4_ALIAS in raw_text.lower() else 'GPT3'
-        keywords = ['clipboard', 'context', 'relation']
-        clipboard_needed = any(keyword in raw_text.lower() for keyword in keywords)
+        resume_keywords = ['continue', 'resume']
+        clipBoard_keywords = ['clipboard', 'context', 'relation']
+        clipboard_needed = any(keyword in raw_text.lower() for keyword in clipBoard_keywords)
+        only_resume_conversation = any(keyword in raw_text.lower() for keyword in resume_keywords)
+        check_gpt_type = True if not only_resume_conversation else False
 
         # Handle Clipboard injection
         if clipboard_needed:
@@ -116,6 +121,4 @@ class TalkGPTWithClipboardContext(BaseCommand):
             if text_parameter:
                 modified_text = "Context:\n" + "```\n" + curr_clipboard + "\n```\n" + text_parameter
 
-        # TODO: Handle comms without creating new conversation
-
-        send_question_to_gpt(modified_text, gpt_type=chatgpt_type, check_gpt_type=True)
+        send_question_to_gpt(modified_text, gpt_type=chatgpt_type, check_gpt_type=check_gpt_type)
