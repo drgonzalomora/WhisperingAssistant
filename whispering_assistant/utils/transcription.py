@@ -12,7 +12,7 @@ from whispering_assistant.configs.config import AUDIO_FILES_DIR, CHANNELS, RATE,
 from whispering_assistant.states_manager import global_var_state
 from whispering_assistant.states_manager.window_manager_messages import message_queue
 from whispering_assistant.utils.performance import print_time_profile
-from whispering_assistant.utils.prompt import get_prompt_cache
+from whispering_assistant.utils.prompt import get_prompt_cache, generate_related_keywords_prompt
 from whispering_assistant.utils.volumes import get_volume, set_volume
 from whispering_assistant.utils.window_dialogs import activate_window, get_active_window_id
 
@@ -83,6 +83,8 @@ def check_transcript_for_short_commands(stream, model, audio):
         data = stream.read(CHUNK)
         frames.append(data)
 
+    # 📌 TODO: Add a checking here to check the number of silences in the input and use that as the basis if we need to skip the transcription altogether.
+
     context_prompt = generate_prompts_for_short_commands()
     result_text = save_file_then_transcribe(frames=frames, model=model, audio=audio, context_prompt=context_prompt)
     plugin_used = execute_plugin_by_keyword(result_text, run_command=False, skip_fallback=True)
@@ -90,6 +92,7 @@ def check_transcript_for_short_commands(stream, model, audio):
     command_chainable = False
     skip_next_transcription = False
 
+    # 📌 TODO: Remove this checking once we implement the checking for silences before transcription.
     if 'cancel' in result_text.lower():
         skip_next_transcription = True
 
@@ -209,7 +212,17 @@ def start_mic_to_transcription(cutoff_padding=0, model=None):
 
     if not skip_next_transcription:
         context_prompt = get_prompt_cache()
-        result_text = save_file_then_transcribe(frames=frames, model=model, audio=audio, context_prompt=context_prompt)
+
+        # Create a second transcription where it uses the prompt for the related keywords.
+        prev_result_text = save_file_then_transcribe(frames=frames, model=model, audio=audio, context_prompt=context_prompt)
+
+        context_prompt_related_keywords = generate_related_keywords_prompt(prev_result_text)
+        result_text = save_file_then_transcribe(frames=frames, model=model, audio=audio,
+                                                context_prompt=context_prompt_related_keywords)
+
+        print("💡 result_text comparison")
+        print("result_text prev:", prev_result_text)
+        print("result_text after:", result_text)
 
         print("Activate prev window...")
         start_time = time.time()
