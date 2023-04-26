@@ -6,7 +6,6 @@ class UpdateDictionary(BaseCommand):
     trigger = "update_dictionary"
     command_type = command_types['ONE_SHOT']
     keywords = {
-
         "action": ["update", "change"], "subject": ["dictionary", "terminology"]}
 
     def run(self, text_parameter, raw_text, *args, **kwargs):

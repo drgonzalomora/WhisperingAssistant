@@ -1,8 +1,5 @@
-import queue
-import time
-
 from PyQt5.QtWidgets import QListWidget, QListWidgetItem
-from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout
+from PyQt5.QtWidgets import QWidget, QVBoxLayout
 
 from whispering_assistant.window_managers.windows.base_window_template import BaseWindowTemplate
 

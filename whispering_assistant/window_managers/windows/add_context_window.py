@@ -3,9 +3,18 @@ import json
 from PyQt5.QtWidgets import QTextEdit, QLabel, QPushButton
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QWidget, QVBoxLayout
+import yaml
 
-from whispering_assistant.utils.prompt import generate_prompt
+from whispering_assistant.utils.prompt import generate_frequent_misspelled_prompt
 from whispering_assistant.window_managers.windows.base_window_template import BaseWindowTemplate
+
+
+def custom_yaml_dump(data, stream=None, **kwds):
+    class CustomDumper(yaml.Dumper):
+        def increase_indent(self, flow=False, indentless=False):
+            return super(CustomDumper, self).increase_indent(flow, False)
+
+    return yaml.dump(data, stream, Dumper=CustomDumper, **kwds)
 
 
 def update_prompt_dict(text):
@@ -13,18 +22,20 @@ def update_prompt_dict(text):
     words = text.lower().split()
     unique_words = list(set(words))
 
-    # Read the JSON file
-    with open('/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/docs/prompt.json', 'r') as f:
-        prompt_dict = json.load(f)
+    # Read the YAML file
+    with open('/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/docs/prompt.yml',
+              'r') as f:
+        prompt_dict = yaml.safe_load(f)
 
     # Append the unique words to the "technical_terms" list
-    prompt_dict["technical_terms"].extend(unique_words)
+    prompt_dict["frequent_misspelled"].extend(unique_words)
 
-    # Write the updated JSON back to the file
-    with open('/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/docs/prompt.json', 'w') as f:
-        json.dump(prompt_dict, f, indent=2)
+    # Write the updated YAML back to the file
+    with open('/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/docs/prompt.yml',
+              'w') as f:
+        f.write(custom_yaml_dump(prompt_dict, sort_keys=False, default_flow_style=False, allow_unicode=True))
 
-    generate_prompt()
+    generate_frequent_misspelled_prompt()
     return unique_words
 
 

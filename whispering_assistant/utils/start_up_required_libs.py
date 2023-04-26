@@ -2,7 +2,7 @@ import pyaudio
 
 from whispering_assistant.configs.config import WhisperModel_PATH, WhisperModel_DEVICE, WhisperModel_COMPUTE, \
     WhisperModel_WORKERS
-from whispering_assistant.utils.prompt import generate_initial_prompt
+from whispering_assistant.utils.prompt import generate_frequent_misspelled_prompt
 from whispering_assistant.utils.transcription import model_transcribe_cache_init
 from faster_whisper import WhisperModel
 
@@ -24,7 +24,7 @@ def start_up_required_libs():
     print("Cache loaded")
 
     print("Load context prompt")
-    context_prompt = generate_initial_prompt()
+    context_prompt = generate_frequent_misspelled_prompt()
     print("context prompt loaded")
 
     return context_prompt, audio, model
