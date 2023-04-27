@@ -23,6 +23,7 @@ porcupine = pvporcupine.create(
 
 prev_pcm = []
 
+
 def watch_audio_for_hotword():
     global prev_pcm, recorder
 
@@ -57,17 +58,17 @@ def watch_audio_for_hotword():
                 subprocess.run(['bash', '/home/joshua/extrafiles/projects/openai-whisper/run.sh'])
                 break
 
-            if global_var_state.recently_transcribed == True:
+            if global_var_state.recently_transcribed is True or global_var_state.pause_hotword is True:
                 recorder.stop()
                 recorder.delete()
                 break
 
         while True:
-            if global_var_state.recently_transcribed == True:
+            if global_var_state.recently_transcribed is True or global_var_state.pause_hotword is True:
                 time.sleep(hot_word_INTERVAL)
                 continue
 
-            if global_var_state.recently_transcribed == False:
+            if global_var_state.recently_transcribed is False and global_var_state.pause_hotword is False:
                 break
 
         time.sleep(0.3)
