@@ -16,6 +16,8 @@ from whispering_assistant.configs.config import openai_key
 from whispering_assistant.utils.performance import print_time_profile
 from langchain.cache import SQLAlchemyCache, RETURN_VAL_TYPE
 from langchain.schema import Generation
+from sentence_transformers import SentenceTransformer
+from annoy import AnnoyIndex
 
 os.environ["OPENAI_API_KEY"] = openai_key
 
@@ -23,8 +25,36 @@ os.environ["OPENAI_API_KEY"] = openai_key
 class SQLAlchemyCustomCache(SQLAlchemyCache):
     """Cache that uses SQAlchemy as a backend."""
 
+    EMBEDDING_DIM = 384
+    EMBEDDING_INDEX_FILENAME = 'embedding_index2.ann'
+
     def __init__(self, engine):
         super().__init__(engine)
+        self.embedding_model = SentenceTransformer('sentence-transformers/paraphrase-MiniLM-L6-v2')
+        self.embedding_index = AnnoyIndex(self.EMBEDDING_DIM, 'angular')
+
+        if os.path.exists(self.EMBEDDING_INDEX_FILENAME):
+            self.embedding_index = AnnoyIndex(self.EMBEDDING_DIM, 'angular')
+            self.embedding_index.load(self.EMBEDDING_INDEX_FILENAME)
+        else:
+            self.embedding_index = self._build_embedding_index()
+
+    def _build_embedding_index(self):
+        embedding_index = AnnoyIndex(self.EMBEDDING_DIM, 'angular')
+
+        with Session(self.engine) as session:
+            stmt = select(self.cache_schema.prompt)
+            rows = session.execute(stmt).fetchall()
+            prompts = [row[0] for row in rows]
+
+        embeddings = self.embedding_model.encode(prompts)
+        for i, embedding in enumerate(embeddings):
+            embedding_index.add_item(i, embedding)
+
+        embedding_index.build(10)
+        embedding_index.save(self.EMBEDDING_INDEX_FILENAME)
+
+        return embedding_index
 
     def lookup(self, prompt: str, llm_string: str) -> Optional[RETURN_VAL_TYPE]:
         """Look up based on prompt and llm_string."""
@@ -34,10 +64,22 @@ class SQLAlchemyCustomCache(SQLAlchemyCache):
             .where(self.cache_schema.llm == llm_string)
             .order_by(self.cache_schema.idx)
         )
+
+        # 📌 TODO: look for the top results in terms of similarity, checking the similar prompts from the vector database.
+        prompt_embedding = self.embedding_model.encode(prompt)
+        similar_prompt_indices = self.embedding_index.get_nns_by_vector(prompt_embedding,
+                                                                        10)  # Adjust the number of similar prompts as needed
+        print("similar_prompt_indices", similar_prompt_indices)
+
+        stmt = (
+            select(self.cache_schema.response)
+            .where(self.cache_schema.prompt == prompt)
+            .where(self.cache_schema.llm == llm_string)
+            .order_by(self.cache_schema.idx)
+        )
+
         with Session(self.engine) as session:
             rows = session.execute(stmt).fetchall()
-            print("rows", rows)
-
             if rows:
                 return [Generation(text=row[0]) for row in rows]
         return None
@@ -48,6 +90,25 @@ class SQLAlchemyCustomCache(SQLAlchemyCache):
             self.cache_schema(prompt=prompt, llm=llm_string, response=gen.text, idx=i)
             for i, gen in enumerate(return_val)
         ]
+
+        print("itemsitems", items)
+
+        # 📌 TODO: Create an embedding for these items and save those in a vector database.
+        prompt_embedding = self.embedding_model.encode(prompt)
+        idx = self.embedding_index.get_n_items()
+
+        # Create a new index and add the new item
+        updated_embedding_index = AnnoyIndex(self.EMBEDDING_DIM, 'angular')
+        for i in range(idx):
+            existing_embedding = self.embedding_index.get_item_vector(i)
+            updated_embedding_index.add_item(i, existing_embedding)
+        updated_embedding_index.add_item(idx, prompt_embedding)
+        updated_embedding_index.build(10)
+        updated_embedding_index.save(self.EMBEDDING_INDEX_FILENAME)
+
+        # Replace the current index with the updated one
+        self.embedding_index = updated_embedding_index
+
         with Session(self.engine) as session, session.begin():
             for item in items:
                 session.merge(item)
