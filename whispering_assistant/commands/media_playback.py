@@ -9,7 +9,7 @@ class MediaPlayBack(BaseCommand):
     command_type = command_types['ONE_SHOT']
     keywords = {
         "action": ["play", "pause", "next", "prev"],
-        "subject": ["music", "video", "media"]
+        "subject": ["music", "video", "media", "song"]
     }
 
     def run(self, text_parameter, raw_text, *args, **kwargs):
