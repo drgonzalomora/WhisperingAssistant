@@ -11,3 +11,4 @@ whispering_assistant/prompt.json
 /whispering_assistant/assets/docs/**.yml
 /whispering_assistant/assets/ml/**.ppn
 __pycache__
+/whispering_assistant/assets/docs/**.md
