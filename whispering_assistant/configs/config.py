@@ -49,6 +49,7 @@ hot_word_INTERVAL = 0.5
 hot_word_api_key = os.environ.get("hot_word_api_key")
 toggl_api_key = os.environ.get("toggl_api_key")
 toggl_workspace_id = os.environ.get("toggl_workspace_id")
+openai_key = os.environ.get("openai_key")
 
 # Training Data
 AUDIO_FILES_DIR = "training_data"

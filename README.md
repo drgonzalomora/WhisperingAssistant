@@ -10,13 +10,16 @@ A digital assistant powered by OpenAI's Whisper Transcription Service, designed 
 ```
 
 ## 📌 TODOs
+- TTS
+- Do some analysis if intent analysis is already worth it to implement at this point.
+- Create some kind of prompt injection for the GPT plugin.
+
 - Custom cut off time based on command type
 - Support other commands
   - brightness
   - open pin
   - open message tabs
 - If transcription is done in quick succession, it could mean that the previous transcription is incorrect.
-- Create some kind of prompt injection for the GPT plugin.
 
 ## 📌 Clean Up
 - Specify all the versions for all the dependencies to make sure that the project is easily replicable even in the future.
