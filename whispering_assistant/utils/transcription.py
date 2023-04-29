@@ -73,7 +73,7 @@ def save_file_then_transcribe(frames, model, audio, context_prompt, transcriptio
 
 def check_transcript_for_short_commands(stream, model, audio):
     print("Showing transcribing window...")
-    max_time_check_short_command = 4
+    max_time_check_short_command = 2.25
     frames = []
     max_it = int(RATE / CHUNK * max_time_check_short_command)
 
@@ -86,7 +86,7 @@ def check_transcript_for_short_commands(stream, model, audio):
     # 📌 TODO: Add a checking here to check the number of silences in the input and use that as the basis if we need to skip the transcription altogether.
 
     context_prompt = generate_prompts_for_short_commands()
-    result_text = save_file_then_transcribe(frames=frames, model=model, audio=audio, context_prompt=context_prompt)
+    result_text = save_file_then_transcribe(frames=frames + frames, model=model, audio=audio, context_prompt=context_prompt)
     plugin_used = execute_plugin_by_keyword(result_text, run_command=False, skip_fallback=True)
 
     command_chainable = False

@@ -1,6 +1,8 @@
+import re
 import time
 import pyperclip
 from whispering_assistant.commands.command_base_template import BaseCommand, command_types
+from whispering_assistant.utils.gpt_prompt_injections import get_prompt_for_injection
 
 GPT3_ALIAS = 'ruby'
 GPT4_ALIAS = 'nora'
@@ -100,7 +102,7 @@ class TalkGPTWithClipboardContext(BaseCommand):
     command_type = command_types['CHAINABLE_LONG']
     keywords = {
         "action": ["relation", "clipboard", "context", "question"],
-        "subject": ["nora", "ruby"]
+        "subject": ["nora", "ruby", "helper"]
     }
 
     def run(self, text_parameter, raw_text, *args, **kwargs):
@@ -109,8 +111,12 @@ class TalkGPTWithClipboardContext(BaseCommand):
         chatgpt_type = 'GPT4' if GPT4_ALIAS in raw_text.lower() else 'GPT3'
         resume_keywords = ['continue', 'resume']
         clipBoard_keywords = ['clipboard', 'context', 'relation']
+        prompt_helper_keywords = ['helper']
+
         clipboard_needed = any(keyword in raw_text.lower() for keyword in clipBoard_keywords)
+        prompt_helper_needed = any(keyword in raw_text.lower() for keyword in prompt_helper_keywords)
         only_resume_conversation = any(keyword in raw_text.lower() for keyword in resume_keywords)
+
         check_gpt_type = True if not only_resume_conversation else False
 
         # Handle Clipboard injection
@@ -120,5 +126,20 @@ class TalkGPTWithClipboardContext(BaseCommand):
 
             if text_parameter:
                 modified_text = "Context:\n" + "```\n" + curr_clipboard + "\n```\n" + text_parameter
+
+        if prompt_helper_needed:
+            # Search for the phrase starting with "use" and ending with "helper"
+            pattern = re.compile(r'\buse\b.*?\bhelper\b')
+            match = pattern.search(text_parameter)
+
+            if match:
+                matched_phrase = match.group(0)
+
+                # Extract the prompt_template and prompt_template_input from the matched_phrase
+                prompt_template, _ = get_prompt_for_injection(matched_phrase.strip())
+                prompt_template_input = text_parameter.replace(matched_phrase, "")
+
+                # Replace the matched_phrase in the text_parameter with the modified_text
+                modified_text = prompt_template.replace('[PROMPT]', prompt_template_input)
 
         send_question_to_gpt(modified_text, gpt_type=chatgpt_type, check_gpt_type=check_gpt_type)
