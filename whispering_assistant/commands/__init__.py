@@ -6,6 +6,7 @@ import os
 import importlib
 
 COMMAND_PLUGINS = {}
+prev_text_parameter = ''
 
 for file in os.listdir(os.path.dirname(__file__)):
     if file.endswith(".py") and file != "__init__.py" and file != "command_base_template.py":
@@ -45,7 +46,6 @@ def check_strings(text, keywords, raw_text=""):
 
     words = text.split()
     limit_to_five_words = " ".join(words[:10]).lower()
-    print("limit_to_five_words", limit_to_five_words)
 
     for action in keywords['action']:
         index_with_spaces = limit_to_five_words.find(action)
@@ -68,7 +68,6 @@ def check_strings(text, keywords, raw_text=""):
         if index != -1:
             subject_found = True
             if subject_index is None or index < subject_index:
-                print("subject_index", subject_index)
                 subject_index = index
                 subject_length = len(subject)
             break
@@ -85,33 +84,46 @@ def check_strings(text, keywords, raw_text=""):
 
 
 def execute_plugin_by_keyword(text, run_command=True, skip_fallback=False, *args, **kwargs):
+    global prev_text_parameter
     found = False
     plugin_used = None
+    text_for_ingestion = text
 
-    result_text_lower = text.lower().lstrip()
+    # 📌 TODO: Only enable this once we find a way to optimize it so it won't slow down any future command.
+    # Start the transcription on the clipboard so that you can easily access the needed.
+    # old_clipboard = pyperclip.paste().lstrip()
+    # pyperclip.copy(text_for_ingestion.lstrip())
+    # time.sleep(0.1)
+    # pyperclip.copy(old_clipboard)
+
+    if 'include previous command' in text_for_ingestion.lower().lstrip():
+        text_for_ingestion = text_for_ingestion.lower().replace('previous command', prev_text_parameter)
+
+    result_text_lower = text_for_ingestion.lower().lstrip()
     words_array = [word.strip() for word in re.split(r'[^\w\s]+|(?<=\s)', result_text_lower) if word.strip()]
     words_cleaned = ' '.join(words_array)
-    print("result_text_lower", result_text_lower, words_array, words_cleaned)
 
     for plugin in COMMAND_PLUGINS.values():
         if plugin.trigger.lower() != FALL_BACK_COMMAND:
-            print("words_cleaned check for plugin", words_cleaned)
             match, text_parameter = check_strings(words_cleaned, plugin.keywords, raw_text=result_text_lower)
+
             if match:
                 plugin_used = plugin
-                print('running plugin', plugin.trigger.lower())
 
                 if run_command:
-                    plugin.run(*args, text_parameter=text_parameter, raw_text=text, **kwargs)
+                    print('running plugin', plugin.trigger.lower())
+                    prev_text_parameter = text_parameter
+                    plugin.run(*args, text_parameter=text_parameter, raw_text=text_for_ingestion, **kwargs)
 
                 found = True
                 break
 
     if not found:
-        print(f"No plugin found for text: {text}")
+        print(f"No plugin found for text: {text_for_ingestion}")
         fallback_plugin = COMMAND_PLUGINS.get(FALL_BACK_COMMAND.lower())
         if not skip_fallback and fallback_plugin:
-            fallback_plugin.run(*args, text_parameter=text, raw_text=text, **kwargs)
+            prev_text_parameter = text_for_ingestion
+            fallback_plugin.run(*args, text_parameter=text_for_ingestion, raw_text=text_for_ingestion, **kwargs)
         else:
             print("No fallback plugin found.")
 
