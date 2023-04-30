@@ -116,16 +116,17 @@ class TalkGPTWithClipboardContext(BaseCommand):
         clipboard_needed = any(keyword in raw_text.lower() for keyword in clipBoard_keywords)
         prompt_helper_needed = any(keyword in raw_text.lower() for keyword in prompt_helper_keywords)
         only_resume_conversation = any(keyword in raw_text.lower() for keyword in resume_keywords)
-
         check_gpt_type = True if not only_resume_conversation else False
+        curr_clipboard = None
 
         # Handle Clipboard injection
         if clipboard_needed:
             curr_clipboard = pyperclip.paste()
             modified_text = curr_clipboard
+            curr_clipboard = "Context:\n" + "```\n" + curr_clipboard + "\n```\n"
 
             if text_parameter:
-                modified_text = "Context:\n" + "```\n" + curr_clipboard + "\n```\n" + text_parameter
+                modified_text = curr_clipboard + text_parameter
 
         if prompt_helper_needed:
             # Search for the phrase starting with "use" and ending with "helper"
@@ -141,5 +142,8 @@ class TalkGPTWithClipboardContext(BaseCommand):
 
                 # Replace the matched_phrase in the text_parameter with the modified_text
                 modified_text = prompt_template.replace('[PROMPT]', prompt_template_input)
+
+                if curr_clipboard:
+                    modified_text = curr_clipboard + modified_text
 
         send_question_to_gpt(modified_text, gpt_type=chatgpt_type, check_gpt_type=check_gpt_type)
