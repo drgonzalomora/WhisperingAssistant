@@ -7,7 +7,7 @@ from pydub.silence import detect_silence
 
 from whispering_assistant.commands import execute_plugin_by_keyword, generate_prompts_for_short_commands
 from whispering_assistant.commands.command_base_template import command_types
-from whispering_assistant.configs.config import AUDIO_FILES_DIR, CHANNELS, RATE, CHUNK, FORMAT, RECORD_SECONDS, \
+from whispering_assistant.configs.config import AUDIO_FILES_DIR, CHANNELS, RATE, CHUNK, FORMAT, \
     SILENCE_THRESHOLD, CONSECUTIVE_SILENCE_CHUNKS
 from whispering_assistant.states_manager import global_var_state
 from whispering_assistant.states_manager.window_manager_messages import message_queue
@@ -86,11 +86,14 @@ def check_transcript_for_short_commands(stream, model, audio):
     # 📌 TODO: Add a checking here to check the number of silences in the input and use that as the basis if we need to skip the transcription altogether.
 
     context_prompt = generate_prompts_for_short_commands()
-    result_text = save_file_then_transcribe(frames=frames + frames, model=model, audio=audio, context_prompt=context_prompt)
+    result_text = save_file_then_transcribe(frames=frames + frames + frames, model=model, audio=audio,
+                                            context_prompt=context_prompt)
     plugin_used = execute_plugin_by_keyword(result_text, run_command=False, skip_fallback=True)
 
     command_chainable = False
     skip_next_transcription = False
+    next_transcription_max_time = 60
+    next_transcription_cut_off_factor = 1
 
     # 📌 TODO: Remove this checking once we implement the checking for silences before transcription.
     if 'cancel' in result_text.lower():
@@ -100,12 +103,17 @@ def check_transcript_for_short_commands(stream, model, audio):
         execute_plugin_by_keyword(result_text, run_command=True, skip_fallback=True)
         skip_next_transcription = True
 
-    # 📌 TODO: Change wait time based on command type
+    if getattr(plugin_used, 'command_type', None) == command_types['CHAINABLE_SHORT']:
+        next_transcription_max_time = 0.5
+        next_transcription_cut_off_factor = 0.5
+    elif getattr(plugin_used, 'command_type', None) == command_types['CHAINABLE_LONG']:
+        next_transcription_max_time = 60
+        next_transcription_cut_off_factor = 2
 
-    return frames, command_chainable, skip_next_transcription
+    return frames, command_chainable, skip_next_transcription, next_transcription_max_time, next_transcription_cut_off_factor
 
 
-def start_mic_to_transcription(cutoff_padding=0, model=None):
+def start_mic_to_transcription(model=None):
     start_time = time.time()
     message_queue.put(('create_avatar', 'show'))
     message_queue.put(('create_avatar', 'set_content', "❌ Starting", "❌ Starting..."))
@@ -137,22 +145,22 @@ def start_mic_to_transcription(cutoff_padding=0, model=None):
     elapsed_time = time.time() - start_time
     print(f"Time taken for recording audio: {elapsed_time:.5f} seconds")
 
-    frames, chainable_commands, skip_next_transcription = check_transcript_for_short_commands(stream, audio=audio,
-                                                                                              model=model)
+    frames, \
+        chainable_commands, \
+        skip_next_transcription, \
+        next_transcription_max_time, \
+        next_transcription_cut_off_factor = check_transcript_for_short_commands(stream, audio=audio, model=model)
 
     silence_counter = 0
     silence_reset_counter = 0
     silence_reset_counter_threshold = 0.5
-    max_it = int(RATE / CHUNK * RECORD_SECONDS)
-    progress_pct = 0
+    max_it = int(RATE / CHUNK * next_transcription_max_time)
 
     # Define variables for the static values
-    LOWER_BOUND = 3 / (RECORD_SECONDS - 4)
+    LOWER_BOUND = 2.25 / (next_transcription_max_time - 2.25)
     UPPER_BOUND = 0.9
     MIN_SCALING = 1
     MAX_SCALING = 2
-
-    SCALING_FACTOR_SHORT_COMMANDS = 1 if chainable_commands else 1.5
 
     if not skip_next_transcription:
         for i in range(0, max_it):
@@ -170,9 +178,9 @@ def start_mic_to_transcription(cutoff_padding=0, model=None):
             if progress_pct >= 0.9:
                 scaling_factor = 2
             elif progress_pct <= LOWER_BOUND:
-                scaling_factor = 1 + cutoff_padding
+                scaling_factor = next_transcription_cut_off_factor
             else:
-                scaling_factor = SCALING_FACTOR_SHORT_COMMANDS + (progress_pct - LOWER_BOUND) * (
+                scaling_factor = next_transcription_cut_off_factor + (progress_pct - LOWER_BOUND) * (
                         MAX_SCALING - MIN_SCALING) / (UPPER_BOUND - LOWER_BOUND)
 
             # Auto cutoff on silence with dynamic CONSECUTIVE_SILENCE_CHUNKS
@@ -212,9 +220,14 @@ def start_mic_to_transcription(cutoff_padding=0, model=None):
 
     if not skip_next_transcription:
         context_prompt = get_prompt_cache()
+        frames_for_processing = frames
+
+        if len(frames) < 40:
+            frames_for_processing = frames + frames
 
         # Create a second transcription where it uses the prompt for the related keywords.
-        prev_result_text = save_file_then_transcribe(frames=frames, model=model, audio=audio, context_prompt=context_prompt)
+        prev_result_text = save_file_then_transcribe(frames=frames_for_processing, model=model, audio=audio,
+                                                     context_prompt=context_prompt)
 
         context_prompt_related_keywords = generate_related_keywords_prompt(prev_result_text)
         result_text = save_file_then_transcribe(frames=frames, model=model, audio=audio,
@@ -229,7 +242,7 @@ def start_mic_to_transcription(cutoff_padding=0, model=None):
         activate_window(window_id)
         print_time_profile(start_time, "activate window")
 
-        print("Analyzing transcription what command to run")
+        print("🕵️ Analyzing transcription what command to run")
         start_time = time.time()
         execute_plugin_by_keyword(result_text)
         print_time_profile(start_time, "run command")
