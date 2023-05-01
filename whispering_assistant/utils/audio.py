@@ -1,6 +1,7 @@
 import librosa
 from pydub.silence import split_on_silence
 from pydub import AudioSegment
+from playsound import playsound
 
 
 def slow_down_audio(input_file, slowdown_factor=0.80):
@@ -28,3 +29,10 @@ def remove_silences(input_file):
     output_file_with_postfix = f"{output_file_name}{postfix}.{output_file_extension}"
     combined.export(output_file_with_postfix, format="wav")
     return output_file_with_postfix
+
+
+def play_sound(file_path):
+    try:
+        playsound(file_path)
+    except Exception as e:
+        print(f"An error occurred while playing the sound: {e}")

@@ -13,3 +13,4 @@ whispering_assistant/prompt.json
 __pycache__
 /whispering_assistant/assets/docs/**.md
 /whispering_assistant/assets/docs/**.csv
+/whispering_assistant/assets/sound/**.mp3

@@ -11,6 +11,7 @@ from whispering_assistant.configs.config import AUDIO_FILES_DIR, CHANNELS, RATE,
     SILENCE_THRESHOLD, CONSECUTIVE_SILENCE_CHUNKS
 from whispering_assistant.states_manager import global_var_state
 from whispering_assistant.states_manager.window_manager_messages import message_queue
+from whispering_assistant.utils.audio import play_sound
 from whispering_assistant.utils.performance import print_time_profile
 from whispering_assistant.utils.prompt import get_prompt_cache, generate_related_keywords_prompt
 from whispering_assistant.utils.volumes import get_volume, set_volume
@@ -78,6 +79,8 @@ def check_transcript_for_short_commands(stream, model, audio):
     max_it = int(RATE / CHUNK * max_time_check_short_command)
 
     message_queue.put(('create_avatar', 'set_content', "✅ Recording", "✅ Recording..."))
+    play_sound('/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/sound/whistle.mp3')
+    set_volume(5)
 
     for i in range(0, max_it):
         data = stream.read(CHUNK)
@@ -104,7 +107,7 @@ def check_transcript_for_short_commands(stream, model, audio):
         skip_next_transcription = True
 
     if getattr(plugin_used, 'command_type', None) == command_types['CHAINABLE_SHORT']:
-        next_transcription_max_time = 0.5
+        next_transcription_max_time = 1
         next_transcription_cut_off_factor = 0.5
     elif getattr(plugin_used, 'command_type', None) == command_types['CHAINABLE_LONG']:
         next_transcription_max_time = 60
@@ -138,8 +141,6 @@ def start_mic_to_transcription(model=None):
     print(f"Time taken for getting current volume level: {elapsed_time:.5f} seconds")
 
     start_time = time.time()
-    # Record audio from microphone
-    set_volume(5)
     audio = pyaudio.PyAudio()
     stream = audio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
     elapsed_time = time.time() - start_time
