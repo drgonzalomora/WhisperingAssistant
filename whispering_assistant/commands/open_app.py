@@ -7,7 +7,7 @@ class OpenApp(BaseCommand):
     command_type = command_types['CHAINABLE_SHORT']
     keywords = {
         "action": ["open", "start"],
-        "subject": ["application"]
+        "subject": ["applications", "application", "app"]
     }
 
     def run(self, text_parameter, *args, **kwargs):
@@ -16,7 +16,7 @@ class OpenApp(BaseCommand):
         pyautogui.keyDown(win_key)
         time.sleep(0.1)  # Wait for 100 milliseconds
         pyautogui.keyUp(win_key)
-        time.sleep(0.3)  # Wait for 300 milliseconds
+        time.sleep(0.5)  # Wait for 300 milliseconds
 
         # Type the text parameter
         pyautogui.typewrite(text_parameter)
