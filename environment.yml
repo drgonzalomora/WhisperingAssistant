@@ -26,4 +26,6 @@ dependencies:
     - pygobject
     - python-levenshtein
     - opencv-python
+    - gptcache
+    - openai
     - git+https://github.com/guillaumekln/faster-whisper.git@master
