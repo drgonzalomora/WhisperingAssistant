@@ -1,7 +1,7 @@
 import time
 import urllib
 
-import pyperclip
+import pyclip
 from whispering_assistant.commands.command_base_template import BaseCommand, command_types
 
 
@@ -22,14 +22,14 @@ class AddTask(BaseCommand):
         import pyautogui
         pyautogui.hotkey('ctrl', 'alt', 'shift', 'a', interval=0.1)
 
-        old_clipboard = pyperclip.paste()
+        old_clipboard = pyclip.paste()
 
         if is_url(old_clipboard):
             context = f"URL: {old_clipboard}"
             text_parameter = text_parameter.lstrip() + " " + context
 
-        pyperclip.copy(text_parameter.lstrip())
+        pyclip.copy(text_parameter.lstrip())
         time.sleep(0.5)
         import pyautogui
         pyautogui.hotkey('ctrl', 'v')
-        pyperclip.copy(old_clipboard)
+        pyclip.copy(old_clipboard)

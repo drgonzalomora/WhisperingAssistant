@@ -1,5 +1,5 @@
 from whispering_assistant.commands.command_base_template import BaseCommand, FALL_BACK_COMMAND
-import pyperclip
+import pyclip
 import time
 
 from whispering_assistant.utils.window_dialogs import get_active_window_name
@@ -15,7 +15,7 @@ def paste_input():
 
     if 'google chrome' in active_window_name.lower():
         import pyautogui
-        curr_clipboard = pyperclip.paste()
+        curr_clipboard = pyclip.paste()
         # Look for image2 on the screen
         image2_location = pyautogui.locateOnScreen(image2, region=region2, confidence=0.8)
 
@@ -49,11 +49,11 @@ class TypeInput(BaseCommand):
     trigger = FALL_BACK_COMMAND
 
     def run(self, *args, text_parameter="", **kwargs):
-        old_clipboard = pyperclip.paste().lstrip()
-        pyperclip.copy(text_parameter.lstrip())
+        old_clipboard = pyclip.paste().lstrip()
+        pyclip.copy(text_parameter.lstrip())
         time.sleep(0.3)
         paste_input()
         time.sleep(0.3)
-        pyperclip.copy(old_clipboard)
+        pyclip.copy(old_clipboard)
         action_done = "clipboard_type_input"
         return action_done

@@ -1,5 +1,5 @@
 import time
-import pyperclip
+import pyclip
 from whispering_assistant.commands.command_base_template import BaseCommand, command_types
 
 
@@ -14,13 +14,13 @@ class WebSearch(BaseCommand):
         pyautogui.hotkey('ctrl', 'alt', 'shift', 'w', interval=0.1)
 
         # Type the string
-        old_clipboard = pyperclip.paste()
-        pyperclip.copy(text_parameter.lstrip())
+        old_clipboard = pyclip.paste()
+        pyclip.copy(text_parameter.lstrip())
         time.sleep(0.5)
         pyautogui.hotkey('ctrl', 't')
         time.sleep(0.2)
         pyautogui.hotkey('ctrl', 'v')
         time.sleep(0.2)
         pyautogui.press('enter')
-        pyperclip.copy(old_clipboard)
+        pyclip.copy(old_clipboard)
         time.sleep(0.5)

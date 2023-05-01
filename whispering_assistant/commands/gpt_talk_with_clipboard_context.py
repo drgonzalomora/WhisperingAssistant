@@ -1,6 +1,6 @@
 import re
 import time
-import pyperclip
+import pyclip
 from whispering_assistant.commands.command_base_template import BaseCommand, command_types
 from whispering_assistant.utils.gpt_prompt_injections import get_prompt_for_injection
 
@@ -70,11 +70,11 @@ def send_question_to_gpt(query, new_conversation=False, gpt_type='GPT3', check_g
             pyautogui.click(image2_center)
 
             # Type the string
-            old_clipboard = pyperclip.paste()
-            pyperclip.copy(query.lstrip())
+            old_clipboard = pyclip.paste()
+            pyclip.copy(query.lstrip())
             time.sleep(0.5)
             pyautogui.hotkey('ctrl', 'v')
-            pyperclip.copy(old_clipboard)
+            pyclip.copy(old_clipboard)
             time.sleep(0.5)
 
             # Press the enter key
@@ -121,7 +121,7 @@ class TalkGPTWithClipboardContext(BaseCommand):
 
         # Handle Clipboard injection
         if clipboard_needed:
-            curr_clipboard = pyperclip.paste()
+            curr_clipboard = pyclip.paste()
             modified_text = curr_clipboard
             curr_clipboard = "Context:\n" + "```\n" + curr_clipboard + "\n```\n"
 

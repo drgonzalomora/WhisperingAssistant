@@ -91,10 +91,10 @@ def execute_plugin_by_keyword(text, run_command=True, skip_fallback=False, *args
 
     # 📌 TODO: Only enable this once we find a way to optimize it so it won't slow down any future command.
     # Start the transcription on the clipboard so that you can easily access the needed.
-    # old_clipboard = pyperclip.paste().lstrip()
-    # pyperclip.copy(text_for_ingestion.lstrip())
+    # old_clipboard = pyclip.paste().lstrip()
+    # pyclip.copy(text_for_ingestion.lstrip())
     # time.sleep(0.1)
-    # pyperclip.copy(old_clipboard)
+    # pyclip.copy(old_clipboard)
 
     if 'include previous command' in text_for_ingestion.lower().lstrip():
         text_for_ingestion = text_for_ingestion.lower().replace('previous command', prev_text_parameter)

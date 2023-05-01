@@ -17,11 +17,13 @@ dependencies:
     - pyaudio
     - python-dotenv
     - pydub
-    - pyperclip
+    - pyclip
     - fuzzywuzzy
     - pulsectl
     - pyautogui
     - pillow
+    - playsound
+    - pygobject
     - python-levenshtein
     - opencv-python
     - git+https://github.com/guillaumekln/faster-whisper.git@master
