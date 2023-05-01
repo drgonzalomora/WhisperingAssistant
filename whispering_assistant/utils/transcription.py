@@ -74,11 +74,12 @@ def save_file_then_transcribe(frames, model, audio, context_prompt, transcriptio
 
 def check_transcript_for_short_commands(stream, model, audio):
     print("Showing transcribing window...")
-    max_time_check_short_command = 2.25
+    max_time_check_short_command = 2.5
     frames = []
     max_it = int(RATE / CHUNK * max_time_check_short_command)
 
     message_queue.put(('create_avatar', 'set_content', "✅ Recording", "✅ Recording..."))
+    set_volume(100)
     play_sound('/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/sound/whistle.mp3')
     set_volume(5)
 
@@ -89,7 +90,7 @@ def check_transcript_for_short_commands(stream, model, audio):
     # 📌 TODO: Add a checking here to check the number of silences in the input and use that as the basis if we need to skip the transcription altogether.
 
     context_prompt = generate_prompts_for_short_commands()
-    result_text = save_file_then_transcribe(frames=frames + frames + frames, model=model, audio=audio,
+    result_text = save_file_then_transcribe(frames=frames + frames, model=model, audio=audio,
                                             context_prompt=context_prompt)
     plugin_used = execute_plugin_by_keyword(result_text, run_command=False, skip_fallback=True)
 
@@ -102,14 +103,16 @@ def check_transcript_for_short_commands(stream, model, audio):
     if 'cancel' in result_text.lower():
         skip_next_transcription = True
 
-    if getattr(plugin_used, 'command_type', None) == command_types['ONE_SHOT']:
+    command_type = getattr(plugin_used, 'command_type', None)
+    print("⚡️command_type", command_type)
+
+    if command_type == command_types['ONE_SHOT']:
         execute_plugin_by_keyword(result_text, run_command=True, skip_fallback=True)
         skip_next_transcription = True
-
-    if getattr(plugin_used, 'command_type', None) == command_types['CHAINABLE_SHORT']:
+    elif command_type == command_types['CHAINABLE_SHORT']:
         next_transcription_max_time = 1
         next_transcription_cut_off_factor = 0.5
-    elif getattr(plugin_used, 'command_type', None) == command_types['CHAINABLE_LONG']:
+    elif command_type == command_types['CHAINABLE_LONG']:
         next_transcription_max_time = 60
         next_transcription_cut_off_factor = 2
 
@@ -158,7 +161,7 @@ def start_mic_to_transcription(model=None):
     max_it = int(RATE / CHUNK * next_transcription_max_time)
 
     # Define variables for the static values
-    LOWER_BOUND = 2.25 / (next_transcription_max_time - 2.25)
+    LOWER_BOUND = 2.5 / (next_transcription_max_time - 2.5)
     UPPER_BOUND = 0.9
     MIN_SCALING = 1
     MAX_SCALING = 2
@@ -223,16 +226,19 @@ def start_mic_to_transcription(model=None):
         context_prompt = get_prompt_cache()
         frames_for_processing = frames
 
+        print("🎤len(frames)", len(frames))
         if len(frames) < 40:
             frames_for_processing = frames + frames
 
         # Create a second transcription where it uses the prompt for the related keywords.
         prev_result_text = save_file_then_transcribe(frames=frames_for_processing, model=model, audio=audio,
                                                      context_prompt=context_prompt)
+        result_text = prev_result_text
 
-        context_prompt_related_keywords = generate_related_keywords_prompt(prev_result_text)
-        result_text = save_file_then_transcribe(frames=frames, model=model, audio=audio,
-                                                context_prompt=context_prompt_related_keywords)
+        if len(frames) > 40:
+            context_prompt_related_keywords = generate_related_keywords_prompt(prev_result_text)
+            result_text = save_file_then_transcribe(frames=frames, model=model, audio=audio,
+                                                    context_prompt=context_prompt_related_keywords)
 
         print("💡 result_text comparison")
         print("result_text prev:", prev_result_text)
