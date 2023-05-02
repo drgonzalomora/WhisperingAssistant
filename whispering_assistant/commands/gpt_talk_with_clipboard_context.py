@@ -123,7 +123,8 @@ class TalkGPTWithClipboardContext(BaseCommand):
         if clipboard_needed:
             curr_clipboard = pyclip.paste()
             modified_text = curr_clipboard
-            curr_clipboard = "Context:\n" + "```\n" + curr_clipboard + "\n```\n"
+            print("curr_clipboard", curr_clipboard)
+            curr_clipboard = "Context:\n" + "```\n" + curr_clipboard.decode('utf-8') + "\n```\n"
 
             if text_parameter:
                 modified_text = curr_clipboard + text_parameter

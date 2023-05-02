@@ -22,7 +22,7 @@ class AddTask(BaseCommand):
         import pyautogui
         pyautogui.hotkey('ctrl', 'alt', 'shift', 'a', interval=0.1)
 
-        old_clipboard = pyclip.paste()
+        old_clipboard = (pyclip.paste()).decode('utf-8')
 
         if is_url(old_clipboard):
             context = f"URL: {old_clipboard}"

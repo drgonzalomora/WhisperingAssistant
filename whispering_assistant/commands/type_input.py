@@ -27,7 +27,7 @@ def paste_input():
             pyautogui.click(image2_center)
 
             # Type the string
-            pyautogui.typewrite(curr_clipboard)
+            pyautogui.typewrite(curr_clipboard.decode('utf-8'))
             time.sleep(0.5)
 
             # Press the enter key
