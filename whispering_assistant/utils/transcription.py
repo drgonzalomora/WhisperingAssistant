@@ -49,7 +49,7 @@ def save_file_then_transcribe(frames, model, audio, context_prompt, transcriptio
     print("💡Transcribing audio...")
 
     start_time = time.time()
-    segments, info = model.transcribe(processed_audio_file_name, beam_size=5, best_of=1, temperature=0.5, language="en",
+    segments, info = model.transcribe(processed_audio_file_name, beam_size=5, best_of=1, temperature=0.1, language="en",
                                       initial_prompt=context_prompt, without_timestamps=True, word_timestamps=False,
                                       vad_filter=False, vad_parameters=dict(min_silence_duration_ms=1000),
                                       **transcription_args, )
@@ -79,8 +79,8 @@ def check_transcript_for_short_commands(stream, model, audio):
     max_it = int(RATE / CHUNK * max_time_check_short_command)
 
     message_queue.put(('create_avatar', 'set_content', "✅ Recording", "✅ Recording..."))
-    set_volume(100)
     play_sound('/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/sound/whistle.mp3')
+    set_volume(100)
     set_volume(5)
 
     for i in range(0, max_it):
