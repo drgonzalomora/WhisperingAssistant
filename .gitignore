@@ -7,10 +7,13 @@ whispering_assistant/prompt.json
 /whispering_assistant/assets/ml/whisper-large-v2-ct2/
 /whisper-large-v2-ct2/
 /.conda-activate
+__pycache__
+
+# Custom files
 /whispering_assistant/assets/docs/**.json
 /whispering_assistant/assets/docs/**.yml
 /whispering_assistant/assets/ml/**.ppn
-__pycache__
 /whispering_assistant/assets/docs/**.md
 /whispering_assistant/assets/docs/**.csv
 /whispering_assistant/assets/sound/**.mp3
+/whispering_assistant/commands/bash_scripts/**.sh

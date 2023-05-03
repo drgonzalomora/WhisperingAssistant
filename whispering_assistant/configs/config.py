@@ -31,7 +31,7 @@ OUTPUT_FILE_NAME = "output.wav"
 
 # Whisper
 WhisperModel_DEVICE = "cuda"
-WhisperModel_WORKERS = 10
+WhisperModel_WORKERS = 5
 WhisperModel_PATH = "/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/ml/whisper-large-v2-ct2"
 
 # compute_type="int8"
