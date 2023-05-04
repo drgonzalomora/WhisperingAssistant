@@ -49,7 +49,7 @@ def save_file_then_transcribe(frames, model, audio, context_prompt, transcriptio
     print("💡Transcribing audio...")
 
     start_time = time.time()
-    segments, info = model.transcribe(processed_audio_file_name, beam_size=5, best_of=1, temperature=0.1, language="en",
+    segments, info = model.transcribe(processed_audio_file_name, beam_size=5, best_of=1, temperature=0, language="en",
                                       initial_prompt=context_prompt, without_timestamps=True, word_timestamps=False,
                                       vad_filter=False, vad_parameters=dict(min_silence_duration_ms=1000),
                                       **transcription_args, )

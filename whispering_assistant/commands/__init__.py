@@ -5,6 +5,9 @@ from whispering_assistant.commands.command_base_template import BaseCommand, FAL
 import os
 import importlib
 
+from whispering_assistant.configs.config import load_os_display_env
+
+load_os_display_env()
 COMMAND_PLUGINS = {}
 prev_text_parameter = ''
 

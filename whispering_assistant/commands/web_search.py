@@ -1,5 +1,4 @@
 import time
-import pyclip
 from whispering_assistant.commands.command_base_template import BaseCommand, command_types
 
 
@@ -11,6 +10,7 @@ class WebSearch(BaseCommand):
 
     def run(self, text_parameter, raw_text, *args, **kwargs):
         import pyautogui
+        import pyclip
         pyautogui.hotkey('ctrl', 'alt', 'shift', 'w', interval=0.1)
 
         # Type the string

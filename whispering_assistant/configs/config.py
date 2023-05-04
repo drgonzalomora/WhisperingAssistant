@@ -5,15 +5,20 @@ from dotenv import load_dotenv
 # Load the environment variables from the .env file
 load_dotenv()
 
+
+def load_os_display_env():
+    os.environ["DISPLAY"] = ":1"
+    os.environ["XAUTHORITY"] = "/run/user/1000/gdm/Xauthority"
+    os.environ["XDG_RUNTIME_DIR"] = "/run/user/1000"
+
+
 # Directory
 script_path = os.path.realpath(__file__)
 script_dir = os.path.dirname(script_path)
 os.chdir(script_dir)
 
 # OS
-os.environ["DISPLAY"] = ":1"
-os.environ["XAUTHORITY"] = "/run/user/1000/gdm/Xauthority"
-os.environ["XDG_RUNTIME_DIR"] = "/run/user/1000"
+load_os_display_env()
 
 # Audio
 FORMAT = pyaudio.paInt16
