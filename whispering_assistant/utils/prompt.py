@@ -32,13 +32,19 @@ def find_related_keywords_from_category_list(input_string, keywords_data, ignore
             ignored_categories[category] = keywords
             continue
 
-        if any(keyword.lower() in input_string.lower() for keyword in keywords):
+        # Split each keyword into individual words
+        split_keywords = [word.lower() for keyword in keywords for word in keyword.split()]
+
+        # Check if any word from the split_keywords is present in the input_string
+        if any(word in input_string.lower() for word in split_keywords):
             related_keywords.extend(keywords)
 
     return related_keywords, ignored_categories
 
 
 def generate_related_keywords_prompt(input_string):
+    print("input_string", input_string)
+
     keywords_data = load_keywords_from_keyword_yml_file()
     related_keywords, ignored_categories = find_related_keywords_from_category_list(input_string, keywords_data,
                                                                                     ignore_categories=[
@@ -46,8 +52,12 @@ def generate_related_keywords_prompt(input_string):
 
     print("related_keywords", related_keywords)
     frequent_misspelled = ignored_categories['frequent_misspelled']
-    final_string = f"topics about {', '.join(frequent_misspelled + related_keywords)}."
-    print("final_string", final_string)
+
+    final_string = None
+
+    if related_keywords:
+        final_string = f"topics about {', '.join(frequent_misspelled + related_keywords)}."
+        print("final_string", final_string)
 
     return final_string
 
@@ -65,4 +75,5 @@ def generate_frequent_misspelled_prompt():
 
     return final_string
 
-# generate_frequent_misspelled_prompt()
+
+# print(generate_related_keywords_prompt("its so hot"))

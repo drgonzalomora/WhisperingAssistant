@@ -237,8 +237,10 @@ def start_mic_to_transcription(model=None):
 
         if len(frames) > 40:
             context_prompt_related_keywords = generate_related_keywords_prompt(prev_result_text)
-            result_text = save_file_then_transcribe(frames=frames, model=model, audio=audio,
-                                                    context_prompt=context_prompt_related_keywords)
+
+            if context_prompt_related_keywords:
+                result_text = save_file_then_transcribe(frames=frames, model=model, audio=audio,
+                                                        context_prompt=context_prompt_related_keywords)
 
         print("💡 result_text comparison")
         print("result_text prev:", prev_result_text)
