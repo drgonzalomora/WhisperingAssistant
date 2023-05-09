@@ -104,6 +104,12 @@ class TalkGPTWithClipboardContext(BaseCommand):
         "action": ["relation", "clipboard", "context", "question"],
         "subject": ["nora", "ruby", "helper"]
     }
+    examples = [
+        'ask question to nora',
+        'send relation to nora',
+        'use clipboard and ask question to ruby',
+        'ask question to nora and use the prompt helper'
+    ]
 
     def run(self, text_parameter, raw_text, *args, **kwargs):
         modified_text = text_parameter

@@ -6,6 +6,10 @@ class IotLightsControl(BaseCommand):
     trigger = "iot_lights_control"
     command_type = command_types['ONE_SHOT']
     keywords = {"action": ["turn on", "turn off"], "subject": ["light", "lights"]}
+    examples = [
+        'turn on lights',
+        'turn off lights'
+    ]
 
     def run(self, text_parameter, raw_text, *args, **kwargs):
         command = 'false' if 'off' in raw_text else 'true'

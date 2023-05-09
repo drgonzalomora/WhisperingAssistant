@@ -17,6 +17,11 @@ class AddTask(BaseCommand):
     trigger = "add_task"
     command_type = command_types['CHAINABLE_LONG']
     keywords = {"action": ["add", "create"], "subject": ["task", "note", "reminder"]}
+    examples = [
+        'create a task',
+        'add a task',
+        'create a note'
+    ]
 
     def run(self, text_parameter, raw_text, *args, **kwargs):
         import pyautogui

@@ -38,9 +38,13 @@ class OpenPycharm(BaseCommand):
     trigger = "open_pycharm"
     command_type = command_types['CHAINABLE_SHORT']
     keywords = {
-        "action": ["pycharm"],
+        "action": ["pycharm", "py charm"],
         "subject": []
     }
+    examples = [
+        'open py charm',
+        'open project on py charm'
+    ]
 
     def run(self, text_parameter, *args, **kwargs):
         def process_cb(dir_path):

@@ -11,6 +11,12 @@ class Shutdown(BaseCommand):
         "action": ["shutdown", "shut down", "power off", "turn off"],
         "subject": ["laptop", "computer"]
     }
+    examples = [
+        'turn off laptop',
+        'shutdown'
+        'turn off computer',
+        'power off laptop'
+    ]
 
     def run(self, *args, **kwargs):
         # Your command execution logic here

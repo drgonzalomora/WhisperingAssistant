@@ -11,6 +11,10 @@ class Restart(BaseCommand):
         "action": ["restart", "reboot"],
         "subject": ["laptop", "computer"]
     }
+    examples = [
+        'restart computer',
+        'reboot laptop'
+    ]
 
     def run(self, *args, **kwargs):
         os.system("reboot")

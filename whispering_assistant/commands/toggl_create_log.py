@@ -42,6 +42,10 @@ class TogglRecordTimeCommand(BaseCommand):
         "action": ["record"],
         "subject": ["time"]
     }
+    examples = [
+        'record my time',
+        'record time log'
+    ]
 
     def run(self, text_parameter, *args, **kwargs):
         api_token = toggl_api_key

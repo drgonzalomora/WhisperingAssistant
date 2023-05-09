@@ -7,6 +7,13 @@ class WebSearch(BaseCommand):
     command_type = command_types['CHAINABLE_LONG']
     keywords = {
         "action": ["search", "ask", "find"], "subject": ["google", "web"]}
+    examples = [
+        'search google',
+        'find on the web',
+        'ask google',
+        'search the web',
+        'search with bing'
+    ]
 
     def run(self, text_parameter, raw_text, *args, **kwargs):
         import pyautogui

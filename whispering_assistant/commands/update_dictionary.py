@@ -7,6 +7,10 @@ class UpdateDictionary(BaseCommand):
     command_type = command_types['ONE_SHOT']
     keywords = {
         "action": ["update", "change"], "subject": ["dictionary", "terminology"]}
+    examples = [
+        'update dictionary',
+        'change dictionary'
+    ]
 
     def run(self, text_parameter, raw_text, *args, **kwargs):
         add_new_prompt()

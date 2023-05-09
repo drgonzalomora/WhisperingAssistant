@@ -10,6 +10,10 @@ class PauseHotWord(BaseCommand):
         "action": ["stop", "start"],
         "subject": ["hot-word", "listening", "hot word"]
     }
+    examples = [
+        'stop listening',
+        'start listening'
+    ]
 
     def run(self, text_parameter, raw_text, *args, **kwargs):
         raw_text = raw_text.lower()

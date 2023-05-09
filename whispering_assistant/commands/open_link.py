@@ -20,6 +20,12 @@ class OpenLink(BaseCommand):
         "action": ["open link", "open web"],
         "subject": []
     }
+    examples = [
+        'open link accounting sheets',
+        'go to accounting sheets link',
+        'open web shopping database',
+        'go to shopping database',
+    ]
 
     def run(self, text_parameter, *args, **kwargs):
         def process_cb(link):

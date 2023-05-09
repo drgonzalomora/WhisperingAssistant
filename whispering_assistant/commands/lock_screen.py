@@ -12,6 +12,10 @@ class LockScreen(BaseCommand):
         "action": ["lock", "lock screen"],
         "subject": ["laptop", "computer"]
     }
+    examples = [
+        'lock screen computer',
+        'lock the screen'
+    ]
 
     def run(self, *args, **kwargs):
         subprocess.run(['xdotool', 'key', 'Super+Escape'])

@@ -11,6 +11,11 @@ class SetVolume(BaseCommand):
         "action": ["change", "set", "update"],
         "subject": ["volume"]
     }
+    examples = [
+        'update volume to 10%',
+        'decrease volume by 5%'
+        'set volume to 63%'
+    ]
 
     def run(self, text_parameter, raw_text, *args, **kwargs):
         raw_text = raw_text.lower()

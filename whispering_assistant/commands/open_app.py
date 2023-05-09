@@ -9,7 +9,11 @@ class OpenApp(BaseCommand):
         "action": ["open", "start"],
         "subject": ["applications", "application", "app"]
     }
-
+    examples = [
+        'open firefox',
+        'open gimp',
+        'open spotify'
+    ]
     def run(self, text_parameter, *args, **kwargs):
         import pyautogui
         win_key = "winleft"

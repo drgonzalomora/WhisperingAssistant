@@ -11,6 +11,13 @@ class MediaPlayBack(BaseCommand):
         "action": ["play", "pause", "next", "prev"],
         "subject": ["music", "video", "media", "song"]
     }
+    examples = [
+        'play music',
+        'play a song',
+        'next song',
+        'play next song',
+        'previous song',
+    ]
 
     def run(self, text_parameter, raw_text, *args, **kwargs):
         raw_text = raw_text.lower()
