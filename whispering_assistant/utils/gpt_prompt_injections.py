@@ -57,6 +57,10 @@ def get_prompt_for_injection(search_text):
 
     print("search_text", search_text)
     top_result, _ = search_index_csv(search_text, n=1, file_name=default_csv_prompts)
+
+    if not top_result:
+        return None
+
     top_result_details = None
 
     for item in prompt_list:
@@ -68,6 +72,7 @@ def get_prompt_for_injection(search_text):
 
     return top_result_details['prompt'], top_result_details
 
-# get_prompt_for_injection('use the time log helper')
+
+# get_prompt_for_injection('create a task for this requirement')
 # parse_markdown()
 # generate_index_prompt_for_injection()

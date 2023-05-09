@@ -102,7 +102,7 @@ class TalkGPTWithClipboardContext(BaseCommand):
     command_type = command_types['CHAINABLE_LONG']
     keywords = {
         "action": ["relation", "clipboard", "context", "question"],
-        "subject": ["nora", "ruby", "helper"]
+        "subject": ["nora", "ruby"]
     }
     examples = [
         'ask question to nora',
@@ -117,13 +117,14 @@ class TalkGPTWithClipboardContext(BaseCommand):
         chatgpt_type = 'GPT4' if GPT4_ALIAS in raw_text.lower() else 'GPT3'
         resume_keywords = ['continue', 'resume']
         clipBoard_keywords = ['clipboard', 'context', 'relation']
-        prompt_helper_keywords = ['helper']
 
         clipboard_needed = any(keyword in raw_text.lower() for keyword in clipBoard_keywords)
-        prompt_helper_needed = any(keyword in raw_text.lower() for keyword in prompt_helper_keywords)
         only_resume_conversation = any(keyword in raw_text.lower() for keyword in resume_keywords)
         check_gpt_type = True if not only_resume_conversation else False
         curr_clipboard = None
+
+        truncated_text_for_prompt_check = " ".join(text_parameter.lower().split()[:7])
+        prompt_template, _ = get_prompt_for_injection(truncated_text_for_prompt_check)
 
         # Handle Clipboard injection
         if clipboard_needed:
@@ -135,22 +136,10 @@ class TalkGPTWithClipboardContext(BaseCommand):
             if text_parameter:
                 modified_text = curr_clipboard + text_parameter
 
-        if prompt_helper_needed:
-            # Search for the phrase starting with "use" and ending with "helper"
-            pattern = re.compile(r'\buse\b.*?\bhelper\b')
-            match = pattern.search(text_parameter)
+        if prompt_template:
+            modified_text = prompt_template.replace('[PROMPT]', text_parameter)
 
-            if match:
-                matched_phrase = match.group(0)
-
-                # Extract the prompt_template and prompt_template_input from the matched_phrase
-                prompt_template, _ = get_prompt_for_injection(matched_phrase.strip())
-                prompt_template_input = text_parameter.replace(matched_phrase, "")
-
-                # Replace the matched_phrase in the text_parameter with the modified_text
-                modified_text = prompt_template.replace('[PROMPT]', prompt_template_input)
-
-                if curr_clipboard:
-                    modified_text = curr_clipboard + modified_text
+            if curr_clipboard:
+                modified_text = modified_text + '\n\n' + curr_clipboard
 
         send_question_to_gpt(modified_text, gpt_type=chatgpt_type, check_gpt_type=check_gpt_type)

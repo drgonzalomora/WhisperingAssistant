@@ -63,7 +63,7 @@ def generate_index_csv(input_text=None, id_text=None, file_name=default_csv_name
     updated_data_df.to_csv(file_name)
 
 
-def search_index_csv(search_text, n=3, pprint=True, file_name=default_csv_name):
+def search_index_csv(search_text, n=3, pprint=True, file_name=default_csv_name, similarity_threshold=0.85):
     start_time = time.time()
     if os.path.exists(file_name):
         df = pd.read_csv(file_name)
@@ -91,7 +91,8 @@ def search_index_csv(search_text, n=3, pprint=True, file_name=default_csv_name):
 
     if pprint:
         for idx, row in results_df.iterrows():
-            top_result = {column: row[column] for column in results_df.columns}
+            if row['similarity'] > similarity_threshold:
+                top_result = {column: row[column] for column in results_df.columns}
             print(f"Intent: {row['input_text'][:200]}")
             print(f"Cosine Similarity: {row['similarity']}\n")
 
