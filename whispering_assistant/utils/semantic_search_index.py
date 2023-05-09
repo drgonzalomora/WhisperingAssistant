@@ -3,10 +3,10 @@ import time
 from openai.embeddings_utils import cosine_similarity
 import pandas as pd
 import numpy as np
-
 from whispering_assistant.configs.config import Instructor_DEVICE, Instructor_MODEL
 from whispering_assistant.utils.performance import print_time_profile
 from InstructorEmbedding import INSTRUCTOR
+import sqlite3
 
 model = INSTRUCTOR(Instructor_MODEL, device=Instructor_DEVICE)
 
@@ -19,21 +19,47 @@ default_csv_name = "/home/joshua/extrafiles/projects/WhisperingAssistant/text_wi
 query_instruction = 'Represent the prompt name for retrieving supporting documents: '
 storing_instruction = 'Represent the prompt description document for retrieval: '
 
+query_embeddings_cache_db_name = "query_embeddings_cache.db"
 
-# 📌 TODO: Add a caching mechanism so we don't need to recalculate the embedding every time it is called.
+
+def create_embedding_database():
+    conn = sqlite3.connect(query_embeddings_cache_db_name)
+    c = conn.cursor()
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS embeddings
+    (input_text TEXT PRIMARY KEY,
+    embedding BLOB)
+    """)
+    conn.commit()
+    conn.close()
+
+
+create_embedding_database()
+
+
 def get_embedding(input_text, embedding_instruction=query_instruction):
+    # Check if the input_text already exists in the cache
+    with sqlite3.connect(query_embeddings_cache_db_name) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT embedding FROM embeddings WHERE input_text=?", (input_text,))
+        cached_embedding = cursor.fetchone()
+
+        if cached_embedding is not None:
+            print('returning a cached get_embedding')
+            # Load the cached embedding from the database
+            return np.frombuffer(cached_embedding[0], dtype=np.float32).tolist()
+
+    # If the input_text is not in the cache, calculate the embedding
     input_text_embedding = model.encode([[embedding_instruction, input_text]])
 
-    # I do manual conversion because for some reason the saved data being saved is in string format and scientific
-    # notation.
-    # Convert the NumPy ndarray to a Python list
-    input_text_embedding_list = input_text_embedding.tolist()
+    # Cache the calculated embedding
+    with sqlite3.connect(query_embeddings_cache_db_name) as conn:
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO embeddings (input_text, embedding) VALUES (?, ?)",
+                       (input_text, input_text_embedding.tobytes()))
+        conn.commit()
 
-    # Now, you can format the values as required
-    formatted_input_text_embedding = [float('{:.8f}'.format(value)) for sublist in input_text_embedding_list for value
-                                      in sublist]
-
-    return formatted_input_text_embedding
+    return np.frombuffer(input_text_embedding.tobytes(), dtype=np.float32).tolist()
 
 
 # 📌 TODO: Move the storage to a proper vector database instead of storing it in just a csv file.

@@ -59,7 +59,7 @@ def get_prompt_for_injection(search_text):
     top_result, _ = search_index_csv(search_text, n=1, file_name=default_csv_prompts)
 
     if not top_result:
-        return None
+        return None, None
 
     top_result_details = None
 
