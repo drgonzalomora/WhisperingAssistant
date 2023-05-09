@@ -44,6 +44,10 @@ WhisperModel_PATH = "/home/joshua/extrafiles/projects/WhisperingAssistant/whispe
 # compute_type="float16"
 WhisperModel_COMPUTE = "int8_float16"
 
+# Embeddings
+Instructor_MODEL = 'hkunlp/instructor-base'
+Instructor_DEVICE = "cpu"
+
 # Hot Word
 hot_word_keywords = ['hey victoria']
 hot_word_sensitivities = [0.7]

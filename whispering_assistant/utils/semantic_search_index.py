@@ -2,31 +2,45 @@ import os
 import time
 from openai.embeddings_utils import cosine_similarity
 import pandas as pd
-from gptcache.embedding import Onnx
 import numpy as np
 
+from whispering_assistant.configs.config import Instructor_DEVICE, Instructor_MODEL
 from whispering_assistant.utils.performance import print_time_profile
+from InstructorEmbedding import INSTRUCTOR
+
+model = INSTRUCTOR(Instructor_MODEL, device=Instructor_DEVICE)
 
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
-onnx = Onnx()
 max_tokens = 512
 default_csv_name = "/home/joshua/extrafiles/projects/WhisperingAssistant/text_with_embeddings_v1.csv"
 
+# 📌 TODO: Make the instructions dynamic based on the embeddings that will be processed.
+query_instruction = 'Represent the prompt name for retrieving supporting documents: '
+storing_instruction = 'Represent the prompt description document for retrieval: '
 
-# 📌 TODO: gptcache.embedding Once we have more time, we can try out other embedding models from this library.
-def get_embedding(input_text):
-    input_text_embedding = onnx.to_embeddings(input_text)
+
+# 📌 TODO: Add a caching mechanism so we don't need to recalculate the embedding every time it is called.
+def get_embedding(input_text, embedding_instruction=query_instruction):
+    input_text_embedding = model.encode([[embedding_instruction, input_text]])
+
     # I do manual conversion because for some reason the saved data being saved is in string format and scientific
     # notation.
-    formatted_input_text_embedding = [float('{:.8f}'.format(value)) for value in input_text_embedding]
+    # Convert the NumPy ndarray to a Python list
+    input_text_embedding_list = input_text_embedding.tolist()
+
+    # Now, you can format the values as required
+    formatted_input_text_embedding = [float('{:.8f}'.format(value)) for sublist in input_text_embedding_list for value
+                                      in sublist]
+
     return formatted_input_text_embedding
 
 
+# 📌 TODO: Move the storage to a proper vector database instead of storing it in just a csv file.
 def generate_index_csv(input_text=None, id_text=None, file_name=default_csv_name):
     processed_data = []
 
-    input_text_embedding = get_embedding(input_text)
+    input_text_embedding = get_embedding(input_text, embedding_instruction=storing_instruction)
 
     processed_data.append({
         'id_text': id_text,
@@ -61,12 +75,11 @@ def search_index_csv(search_text, n=3, pprint=True, file_name=default_csv_name):
 
     start_time = time.time()
     search_text_embedding = get_embedding(search_text)
-
-    df["similarity"] = df.embedding.apply(
-        lambda x: cosine_similarity(x, search_text_embedding))
     print_time_profile(start_time, "Get Embedding")
 
     start_time = time.time()
+    df["similarity"] = df.embedding.apply(
+        lambda x: cosine_similarity(x, search_text_embedding))
     results_df = (
                      df.sort_values("similarity", ascending=False)
                      .head(n)
