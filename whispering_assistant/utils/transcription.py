@@ -79,9 +79,6 @@ def check_transcript_for_short_commands(stream, model, audio):
     max_it = int(RATE / CHUNK * max_time_check_short_command)
 
     message_queue.put(('create_avatar', 'set_content', "✅ Recording", "✅ Recording..."))
-    play_sound('/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/sound/whistle.mp3')
-    set_volume(100)
-    set_volume(5)
 
     for i in range(0, max_it):
         data = stream.read(CHUNK)
@@ -145,6 +142,11 @@ def start_mic_to_transcription(model=None):
 
     start_time = time.time()
     audio = pyaudio.PyAudio()
+
+    play_sound('/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/sound/whistle.mp3')
+    set_volume(100)
+    set_volume(5)
+
     stream = audio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
     elapsed_time = time.time() - start_time
     print(f"Time taken for recording audio: {elapsed_time:.5f} seconds")
