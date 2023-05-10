@@ -56,7 +56,7 @@ def generate_related_keywords_prompt(input_string):
     final_string = None
 
     if related_keywords:
-        final_string = f"topics about {', '.join(frequent_misspelled + related_keywords)}."
+        final_string = f"topics about {', '.join(frequent_misspelled + related_keywords)}. We "
         print("final_string", final_string)
 
     return final_string
@@ -69,7 +69,7 @@ def generate_frequent_misspelled_prompt():
     frequent_misspelled_items = keywords_data.get('frequent_misspelled', [])
 
     print("frequent_misspelled_items", frequent_misspelled_items)
-    final_string = f"topics about {', '.join(frequent_misspelled_items)}."
+    final_string = f"topics about {', '.join(frequent_misspelled_items)}. We "
     print("frequent_misspelled_items", final_string)
     initial_prompt_cache = final_string
 
