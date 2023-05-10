@@ -1,12 +1,14 @@
 import os
 import time
-from openai.embeddings_utils import cosine_similarity
 import pandas as pd
 import numpy as np
 from whispering_assistant.configs.config import Instructor_DEVICE, Instructor_MODEL
+from whispering_assistant.utils.embeddings_cache import query_embeddings_cache_db_name
 from whispering_assistant.utils.performance import print_time_profile
 from InstructorEmbedding import INSTRUCTOR
 import sqlite3
+
+from whispering_assistant.utils.vector_embeddings_storage import save_faiss_index, init_faiss_index
 
 model = INSTRUCTOR(Instructor_MODEL, device=Instructor_DEVICE)
 
@@ -19,22 +21,7 @@ default_csv_name = "/home/joshua/extrafiles/projects/WhisperingAssistant/text_wi
 query_instruction = 'Represent the prompt name for retrieving supporting documents: '
 storing_instruction = 'Represent the prompt description document for retrieval: '
 
-query_embeddings_cache_db_name = "query_embeddings_cache.db"
-
-
-def create_embedding_database():
-    conn = sqlite3.connect(query_embeddings_cache_db_name)
-    c = conn.cursor()
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS embeddings
-    (input_text TEXT PRIMARY KEY,
-    embedding BLOB)
-    """)
-    conn.commit()
-    conn.close()
-
-
-create_embedding_database()
+faiss_index = init_faiss_index()
 
 
 def get_embedding(input_text, embedding_instruction=query_instruction):
@@ -62,61 +49,73 @@ def get_embedding(input_text, embedding_instruction=query_instruction):
     return np.frombuffer(input_text_embedding.tobytes(), dtype=np.float32).tolist()
 
 
-# 📌 TODO: Move the storage to a proper vector database instead of storing it in just a csv file.
-def generate_index_csv(input_text=None, id_text=None, file_name=default_csv_name):
-    processed_data = []
+def is_duplicate(existing_data_df, id_text):
+    return id_text in existing_data_df['id_text'].values
 
+
+def generate_index_csv(input_text=None, id_text=None, file_name=default_csv_name):
+    # Get the embedding of the input text
     input_text_embedding = get_embedding(input_text, embedding_instruction=storing_instruction)
 
-    processed_data.append({
-        'id_text': id_text,
-        'input_text': input_text,
-        'embedding': input_text_embedding
-    })
+    # Add the embedding to the Faiss index
+    faiss_index.add(np.array(input_text_embedding).astype('float32').reshape(1, -1))
 
-    # Convert the list of processed data to a DataFrame
+    # Add the input text and id_text to a CSV file
+    processed_data = [{'id_text': id_text, 'input_text': input_text}]
+
     new_data_df = pd.DataFrame(processed_data)
 
     try:
-        # If the CSV file exists, read it and append the new data to it
         existing_data_df = pd.read_csv(file_name, index_col=0)
-        updated_data_df = existing_data_df.append(new_data_df, ignore_index=True)
+        if not is_duplicate(existing_data_df, id_text):
+            updated_data_df = pd.concat([existing_data_df, new_data_df], ignore_index=True)
+        else:
+            print("The given data is already present in the CSV")
+            updated_data_df = existing_data_df
     except FileNotFoundError:
-        # If the CSV file does not exist, use the new data as the updated data
         updated_data_df = new_data_df
 
-    # Save the resulting DataFrame to a CSV file
+    save_faiss_index(faiss_index, file_name)
     updated_data_df.to_csv(file_name)
+
+    csv_row_count = len(updated_data_df)
+
+    print("index count faiss", faiss_index.ntotal)
+    print("index count csv", csv_row_count)
+    print("index count should match!", faiss_index.ntotal == csv_row_count)
 
 
 def search_index_csv(search_text, n=3, pprint=True, file_name=default_csv_name, similarity_threshold=0.85):
     start_time = time.time()
     if os.path.exists(file_name):
-        df = pd.read_csv(file_name)
-        df["embedding"] = df.embedding.apply(eval).apply(np.array)
+        metadata_df = pd.read_csv(file_name)
     else:
         print(f"🛑 The file '{file_name}' does not exist. Generate an index first")
         return
+
     print_time_profile(start_time, "File Loading")
 
     start_time = time.time()
     search_text_embedding = get_embedding(search_text)
+    search_text_embedding = np.array(search_text_embedding).astype('float32').reshape(1,
+                                                                                      -1)  # Convert to 2D NumPy array
     print_time_profile(start_time, "Get Embedding")
 
+    # Search the Faiss index for the top n most similar embeddings
     start_time = time.time()
-    df["similarity"] = df.embedding.apply(
-        lambda x: cosine_similarity(x, search_text_embedding))
-    results_df = (
-                     df.sort_values("similarity", ascending=False)
-                     .head(n)
-                 ).iloc[::-1].reset_index(drop=True)
+    distances, indices = faiss_index.search(search_text_embedding, n)
+    # Get the corresponding metadata from the CSV file
+    results_df = metadata_df.iloc[indices[0]].copy()
+    results_df['similarity'] = 1 - distances[0] / 2  # Convert Euclidean distance to cosine similarity
 
-    print_time_profile(start_time, "Cosine")
+    # reversed the order so we will just add the last item as the top result
+    reversed_df = results_df.iloc[::-1]
+    print_time_profile(start_time, "Search Faiss")
 
     top_result = None
 
     if pprint:
-        for idx, row in results_df.iterrows():
+        for idx, row in reversed_df.iterrows():
             if row['similarity'] > similarity_threshold:
                 top_result = {column: row[column] for column in results_df.columns}
             print(f"Intent: {row['input_text'][:200]}")

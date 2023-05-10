@@ -73,6 +73,6 @@ def get_prompt_for_injection(search_text):
     return top_result_details['prompt'], top_result_details
 
 
-# get_prompt_for_injection('create a task for this requirement')
 # parse_markdown()
 # generate_index_prompt_for_injection()
+# get_prompt_for_injection('create a checklist with the following context')
