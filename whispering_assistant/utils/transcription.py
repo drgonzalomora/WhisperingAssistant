@@ -96,9 +96,7 @@ def check_transcript_for_short_commands(stream, model, audio):
     next_transcription_max_time = 60
     next_transcription_cut_off_factor = 1
 
-    # 📌 TODO: Remove this checking once we implement the checking for silences before transcription.
-    if 'cancel' in result_text.lower():
-        skip_next_transcription = True
+    # 📌 TODO: Implement the checking for silences before transcription.
 
     command_type = getattr(plugin_used, 'command_type', None)
     print("⚡️command_type", command_type)
