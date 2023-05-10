@@ -235,7 +235,7 @@ def start_mic_to_transcription(model=None):
                                                      context_prompt=context_prompt)
         result_text = prev_result_text
 
-        if len(frames) > 40:
+        if len(frames) > 30:
             context_prompt_related_keywords = generate_related_keywords_prompt(prev_result_text)
 
             if context_prompt_related_keywords:
