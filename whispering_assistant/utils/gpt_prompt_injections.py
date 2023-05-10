@@ -52,6 +52,9 @@ def generate_index_prompt_for_injection():
 
 
 def get_prompt_for_injection(search_text):
+    if not search_text:
+        return None, None
+
     if not os.path.exists(default_csv_prompts):
         generate_index_prompt_for_injection()
 
@@ -71,7 +74,6 @@ def get_prompt_for_injection(search_text):
     print("top_result_prompt", top_result_details['prompt'])
 
     return top_result_details['prompt'], top_result_details
-
 
 # parse_markdown()
 # generate_index_prompt_for_injection()
