@@ -8,7 +8,8 @@ from whispering_assistant.utils.performance import print_time_profile
 from InstructorEmbedding import INSTRUCTOR
 import sqlite3
 
-from whispering_assistant.utils.vector_embeddings_storage import save_faiss_index, init_faiss_index
+from whispering_assistant.utils.vector_embeddings_storage import save_faiss_index, init_faiss_index, \
+    faiss_index_file_name
 
 model = INSTRUCTOR(Instructor_MODEL, device=Instructor_DEVICE)
 
@@ -22,6 +23,7 @@ query_instruction = 'Represent the prompt name for retrieving supporting documen
 storing_instruction = 'Represent the prompt description document for retrieval: '
 
 faiss_index = init_faiss_index()
+print("faiss_index", faiss_index.ntotal)
 
 
 def get_embedding(input_text, embedding_instruction=query_instruction):
@@ -54,6 +56,8 @@ def is_duplicate(existing_data_df, id_text):
 
 
 def generate_index_csv(input_text=None, id_text=None, file_name=default_csv_name):
+    global faiss_index
+
     # Get the embedding of the input text
     input_text_embedding = get_embedding(input_text, embedding_instruction=storing_instruction)
 
@@ -75,7 +79,7 @@ def generate_index_csv(input_text=None, id_text=None, file_name=default_csv_name
     except FileNotFoundError:
         updated_data_df = new_data_df
 
-    save_faiss_index(faiss_index, file_name)
+    save_faiss_index(faiss_index, file_name=faiss_index_file_name)
     updated_data_df.to_csv(file_name)
 
     csv_row_count = len(updated_data_df)
@@ -86,6 +90,7 @@ def generate_index_csv(input_text=None, id_text=None, file_name=default_csv_name
 
 
 def search_index_csv(search_text, n=3, pprint=True, file_name=default_csv_name, similarity_threshold=0.85):
+    global faiss_index
     start_time = time.time()
     if os.path.exists(file_name):
         metadata_df = pd.read_csv(file_name)
@@ -104,6 +109,8 @@ def search_index_csv(search_text, n=3, pprint=True, file_name=default_csv_name, 
     # Search the Faiss index for the top n most similar embeddings
     start_time = time.time()
     distances, indices = faiss_index.search(search_text_embedding, n)
+    print("distances", distances, indices)
+
     # Get the corresponding metadata from the CSV file
     results_df = metadata_df.iloc[indices[0]].copy()
     results_df['similarity'] = 1 - distances[0] / 2  # Convert Euclidean distance to cosine similarity

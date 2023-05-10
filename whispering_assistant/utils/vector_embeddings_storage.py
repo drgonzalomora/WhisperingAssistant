@@ -9,7 +9,7 @@ faiss_index = faiss.IndexFlatL2(dimension)
 
 
 # Save the Faiss index to a file
-def save_faiss_index(index, file_name):
+def save_faiss_index(index, file_name=faiss_index_file_name):
     faiss.write_index(index, file_name)
 
 
