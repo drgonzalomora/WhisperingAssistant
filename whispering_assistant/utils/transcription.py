@@ -142,7 +142,6 @@ def start_mic_to_transcription(model=None):
     audio = pyaudio.PyAudio()
 
     play_sound('/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/sound/whistle.mp3')
-    set_volume(100)
     set_volume(5)
 
     stream = audio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
