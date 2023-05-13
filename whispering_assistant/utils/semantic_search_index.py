@@ -8,25 +8,11 @@ from whispering_assistant.utils.performance import print_time_profile
 from InstructorEmbedding import INSTRUCTOR
 import sqlite3
 
-from whispering_assistant.utils.vector_embeddings_storage import save_faiss_index, init_faiss_index, \
-    faiss_index_file_name
-
 model = INSTRUCTOR(Instructor_MODEL, device=Instructor_DEVICE)
-
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
-max_tokens = 512
-default_csv_name = "/home/joshua/extrafiles/projects/WhisperingAssistant/text_with_embeddings_v1.csv"
 
-# 📌 TODO: Make the instructions dynamic based on the embeddings that will be processed.
-query_instruction = 'Represent the prompt name for retrieving supporting documents: '
-storing_instruction = 'Represent the prompt description document for retrieval: '
-
-faiss_index = init_faiss_index()
-print("faiss_index", faiss_index.ntotal)
-
-
-def get_embedding(input_text, embedding_instruction=query_instruction):
+def get_embedding(input_text, embedding_instruction=""):
     # Check if the input_text already exists in the cache
     with sqlite3.connect(query_embeddings_cache_db_name) as conn:
         cursor = conn.cursor()
@@ -55,8 +41,10 @@ def is_duplicate(existing_data_df, id_text):
     return id_text in existing_data_df['id_text'].values
 
 
-def generate_index_csv(input_text=None, id_text=None, file_name=default_csv_name):
-    global faiss_index
+def generate_index_csv(input_text=None, id_text=None, file_name="", storing_instruction="",
+                       faiss_index=None, save_faiss_index=None):
+    if not faiss_index or not save_faiss_index:
+        return print('No faiss_index or save_faiss_index')
 
     # Get the embedding of the input text
     input_text_embedding = get_embedding(input_text, embedding_instruction=storing_instruction)
@@ -79,7 +67,7 @@ def generate_index_csv(input_text=None, id_text=None, file_name=default_csv_name
     except FileNotFoundError:
         updated_data_df = new_data_df
 
-    save_faiss_index(faiss_index, file_name=faiss_index_file_name)
+    save_faiss_index(faiss_index)
     updated_data_df.to_csv(file_name)
 
     csv_row_count = len(updated_data_df)
@@ -89,8 +77,11 @@ def generate_index_csv(input_text=None, id_text=None, file_name=default_csv_name
     print("index count should match!", faiss_index.ntotal == csv_row_count)
 
 
-def search_index_csv(search_text, n=3, pprint=True, file_name=default_csv_name, similarity_threshold=0.85):
-    global faiss_index
+def search_index_csv(search_text, n=3, pprint=True, file_name="", similarity_threshold=0.85,
+                     faiss_index=None,query_instruction=""):
+    if not faiss_index:
+        return print('No faiss_index or save_faiss_index')
+
     start_time = time.time()
     if os.path.exists(file_name):
         metadata_df = pd.read_csv(file_name)
@@ -101,7 +92,7 @@ def search_index_csv(search_text, n=3, pprint=True, file_name=default_csv_name, 
     print_time_profile(start_time, "File Loading")
 
     start_time = time.time()
-    search_text_embedding = get_embedding(search_text)
+    search_text_embedding = get_embedding(search_text,embedding_instruction=query_instruction)
     search_text_embedding = np.array(search_text_embedding).astype('float32').reshape(1,
                                                                                       -1)  # Convert to 2D NumPy array
     print_time_profile(start_time, "Get Embedding")
