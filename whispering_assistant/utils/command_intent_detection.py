@@ -1,6 +1,6 @@
 import os
 
-from whispering_assistant.commands import COMMAND_PLUGINS
+from whispering_assistant.utils.commands_plugin_state import COMMAND_PLUGINS
 from whispering_assistant.utils.semantic_search_index import generate_index_csv, search_index_csv
 from whispering_assistant.utils.vector_embeddings_storage import init_faiss_index
 
@@ -14,6 +14,9 @@ faiss_index, save_faiss_index = init_faiss_index(faiss_index_file_name)
 
 # 📌 TODO: Add a logic to make sure that we need to create the index if it's not yet existing instead of manually running it and assuming that the index is already created.
 
+intent_list = []
+
+
 def parse_plugin_commands_examples():
     result = []
     for plugin in COMMAND_PLUGINS.values():
@@ -23,13 +26,9 @@ def parse_plugin_commands_examples():
     return result
 
 
-intent_list = parse_plugin_commands_examples()
-
-
 def generate_index_for_intent_detection():
     global intent_list
     intent_list = parse_plugin_commands_examples()
-    print(intent_list)
 
     for idx, intent_item in enumerate(intent_list):
         id_text_with_index = f"{intent_item[0]}_{idx}"
@@ -40,6 +39,7 @@ def generate_index_for_intent_detection():
 
 def get_intent_from_text(command_text):
     global intent_list
+    intent_list = parse_plugin_commands_examples()
 
     if not command_text:
         return None, None
@@ -49,6 +49,8 @@ def get_intent_from_text(command_text):
 
     top_result, _ = search_index_csv(command_text, n=1, file_name=default_intent_index, faiss_index=faiss_index,
                                      query_instruction=query_instruction)
+
+    print("top_result", top_result)
 
     if not top_result:
         return None, None
@@ -63,10 +65,9 @@ def get_intent_from_text(command_text):
     if not top_result_details:
         return None, None
 
-    print("top_result_prompt", top_result_details[0])
+    print("top_result_prompt", top_result_details)
 
     return top_result_details[0], top_result_details
-
 
 # parse_plugin_commands_examples()
 # generate_index_for_intent_detection()

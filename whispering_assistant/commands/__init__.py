@@ -6,9 +6,11 @@ import os
 import importlib
 
 from whispering_assistant.configs.config import load_os_display_env
+from whispering_assistant.utils.command_intent_detection import get_intent_from_text
+from whispering_assistant.utils.commands_plugin_state import COMMAND_PLUGINS
 
 load_os_display_env()
-COMMAND_PLUGINS = {}
+
 prev_text_parameter = ''
 
 for file in os.listdir(os.path.dirname(__file__)):
@@ -99,6 +101,7 @@ def execute_plugin_by_keyword(text, run_command=True, skip_fallback=False, *args
     # time.sleep(0.1)
     # pyclip.copy(old_clipboard)
 
+    # 📌 TODO: Update this part of the code and move this to a separate command plugin instead of hard coding it in this general checking function.
     if 'include previous command' in text_for_ingestion.lower().lstrip():
         text_for_ingestion = text_for_ingestion.lower().replace('previous command', prev_text_parameter)
 
@@ -106,9 +109,20 @@ def execute_plugin_by_keyword(text, run_command=True, skip_fallback=False, *args
     words_array = [word.strip() for word in re.split(r'[^\w\s]+|(?<=\s)', result_text_lower) if word.strip()]
     words_cleaned = ' '.join(words_array)
 
+    first_seven_words = ' '.join(result_text_lower.split()[:7])
+    detected_intent, _ = get_intent_from_text(first_seven_words)
+    print("detected_intent", detected_intent)
+
+    match = False
+
     for plugin in COMMAND_PLUGINS.values():
         if plugin.trigger.lower() != FALL_BACK_COMMAND:
-            match, text_parameter = check_strings(words_cleaned, plugin.keywords, raw_text=result_text_lower)
+
+            if detected_intent and detected_intent.lower() == plugin.trigger.lower():
+                print("found plugin using intent", detected_intent)
+                match = True
+            else:
+                match, text_parameter = check_strings(words_cleaned, plugin.keywords, raw_text=result_text_lower)
 
             if match:
                 plugin_used = plugin
