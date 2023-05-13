@@ -13,10 +13,13 @@ os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
 
 def get_embedding(input_text, embedding_instruction=""):
-    # Check if the input_text already exists in the cache
+    # Check if the input_text and embedding_instruction combination already exists in the cache
     with sqlite3.connect(query_embeddings_cache_db_name) as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT embedding FROM embeddings WHERE input_text=?", (input_text,))
+        cursor.execute(
+            "SELECT embedding FROM embeddings WHERE input_text=? AND embedding_instruction=?",
+            (input_text, embedding_instruction)
+        )
         cached_embedding = cursor.fetchone()
 
         if cached_embedding is not None:
@@ -30,8 +33,10 @@ def get_embedding(input_text, embedding_instruction=""):
     # Cache the calculated embedding
     with sqlite3.connect(query_embeddings_cache_db_name) as conn:
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO embeddings (input_text, embedding) VALUES (?, ?)",
-                       (input_text, input_text_embedding.tobytes()))
+        cursor.execute(
+            "INSERT INTO embeddings (input_text, embedding_instruction, embedding) VALUES (?, ?, ?)",
+            (input_text, embedding_instruction, input_text_embedding.tobytes())
+        )
         conn.commit()
 
     return np.frombuffer(input_text_embedding.tobytes(), dtype=np.float32).tolist()
@@ -78,7 +83,7 @@ def generate_index_csv(input_text=None, id_text=None, file_name="", storing_inst
 
 
 def search_index_csv(search_text, n=3, pprint=True, file_name="", similarity_threshold=0.85,
-                     faiss_index=None,query_instruction=""):
+                     faiss_index=None, query_instruction=""):
     if not faiss_index:
         return print('No faiss_index or save_faiss_index')
 
@@ -92,7 +97,7 @@ def search_index_csv(search_text, n=3, pprint=True, file_name="", similarity_thr
     print_time_profile(start_time, "File Loading")
 
     start_time = time.time()
-    search_text_embedding = get_embedding(search_text,embedding_instruction=query_instruction)
+    search_text_embedding = get_embedding(search_text, embedding_instruction=query_instruction)
     search_text_embedding = np.array(search_text_embedding).astype('float32').reshape(1,
                                                                                       -1)  # Convert to 2D NumPy array
     print_time_profile(start_time, "Get Embedding")

@@ -8,11 +8,14 @@ def create_embedding_database():
     c = conn.cursor()
     c.execute("""
     CREATE TABLE IF NOT EXISTS embeddings
-    (input_text TEXT PRIMARY KEY,
-    embedding BLOB)
+    (input_text TEXT NOT NULL,
+    embedding_instruction TEXT NOT NULL,
+    embedding BLOB,
+    PRIMARY KEY (input_text, embedding_instruction))
     """)
     conn.commit()
     conn.close()
 
 
 create_embedding_database()
+
