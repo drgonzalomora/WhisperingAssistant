@@ -15,7 +15,14 @@ def paste_input():
 
     if 'google chrome' in active_window_name.lower():
         import pyautogui
-        curr_clipboard = pyclip.paste()
+
+        try:
+            curr_clipboard = pyclip.paste()
+            curr_clipboard = curr_clipboard.lstrip() if curr_clipboard is not None else ""
+        except Exception as e:
+            curr_clipboard = ""
+            print(f"Error occurred while accessing clipboard: {e}")
+
         # Look for image2 on the screen
         image2_location = pyautogui.locateOnScreen(image2, region=region2, confidence=0.8)
 
@@ -49,7 +56,13 @@ class TypeInput(BaseCommand):
     trigger = FALL_BACK_COMMAND
 
     def run(self, *args, text_parameter="", **kwargs):
-        old_clipboard = pyclip.paste().lstrip()
+        try:
+            old_clipboard = pyclip.paste()
+            old_clipboard = old_clipboard.lstrip() if old_clipboard is not None else ""
+        except Exception as e:
+            old_clipboard = ""
+            print(f"Error occurred while accessing clipboard: {e}")
+
         pyclip.copy(text_parameter.lstrip())
         time.sleep(0.3)
         paste_input()
