@@ -43,6 +43,9 @@ class OpenPycharm(BaseCommand):
     }
     examples = [
         'open py charm',
+        'open pycharm',
+        'open pycharm for',
+        'pycharm for',
         'open project on py charm'
     ]
 
