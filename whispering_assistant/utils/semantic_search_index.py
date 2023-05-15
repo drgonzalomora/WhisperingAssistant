@@ -82,7 +82,7 @@ def generate_index_csv(input_text=None, id_text=None, file_name="", storing_inst
     print("index count should match!", faiss_index.ntotal == csv_row_count)
 
 
-def search_index_csv(search_text, n=3, pprint=True, file_name="", similarity_threshold=0.88,
+def search_index_csv(search_text, n=3, pprint=True, file_name="", similarity_threshold=0.9,
                      faiss_index=None, query_instruction=""):
     if not faiss_index:
         return print('No faiss_index or save_faiss_index')
@@ -119,7 +119,7 @@ def search_index_csv(search_text, n=3, pprint=True, file_name="", similarity_thr
 
     if pprint:
         for idx, row in reversed_df.iterrows():
-            if row['similarity'] > similarity_threshold:
+            if row['similarity'] >= similarity_threshold:
                 top_result = {column: row[column] for column in results_df.columns}
             print(f"Intent: {row['input_text'][:200]}")
             print(f"Cosine Similarity: {row['similarity']}\n")
