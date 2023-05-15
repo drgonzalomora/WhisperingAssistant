@@ -113,18 +113,13 @@ def execute_plugin_by_keyword(text, run_command=True, skip_fallback=False, *args
     detected_intent, _ = get_intent_from_text(first_seven_words)
     print("detected_intent", detected_intent)
 
-    match = False
-
     for plugin in COMMAND_PLUGINS.values():
         if plugin.trigger.lower() != FALL_BACK_COMMAND:
 
             if detected_intent and detected_intent.lower() == plugin.trigger.lower():
                 print("found plugin using intent", detected_intent)
-                match = True
-            else:
                 match, text_parameter = check_strings(words_cleaned, plugin.keywords, raw_text=result_text_lower)
 
-            if match:
                 plugin_used = plugin
 
                 if run_command:
