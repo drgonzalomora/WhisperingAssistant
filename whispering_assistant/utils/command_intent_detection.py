@@ -16,7 +16,6 @@ faiss_index, save_faiss_index = init_faiss_index(faiss_index_file_name)
 
 intent_list = []
 
-
 def parse_plugin_commands_examples():
     result = []
     for plugin in COMMAND_PLUGINS.values():
@@ -69,6 +68,8 @@ def get_intent_from_text(command_text):
 
     return top_result_details[0], top_result_details
 
+
 # parse_plugin_commands_examples()
+# import whispering_assistant.commands
 # generate_index_for_intent_detection()
 # get_intent_from_text('shutdown')
