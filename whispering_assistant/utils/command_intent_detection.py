@@ -11,10 +11,12 @@ query_instruction = 'Represent the command intent for retrieving similar example
 storing_instruction = 'Represent the command intent examples for retrieval: '
 
 faiss_index, save_faiss_index = init_faiss_index(faiss_index_file_name)
+generate_index_for_intent_detection_is_running = False
 
 # 📌 TODO: Add a logic to make sure that we need to create the index if it's not yet existing instead of manually running it and assuming that the index is already created.
 
 intent_list = []
+
 
 def parse_plugin_commands_examples():
     result = []
@@ -26,8 +28,32 @@ def parse_plugin_commands_examples():
 
 
 def generate_index_for_intent_detection():
+    global faiss_index, save_faiss_index
     global intent_list
+    global generate_index_for_intent_detection_is_running
+
+    if generate_index_for_intent_detection_is_running:
+        return
+
+    generate_index_for_intent_detection_is_running = True
+
     intent_list = parse_plugin_commands_examples()
+
+    # List of files to delete if they exist
+    files_to_delete = [faiss_index_file_name, default_intent_index]
+
+    # Delete files if they exist
+    for file in files_to_delete:
+        print(f"Attempting to delete: {file}")
+        try:
+            if os.path.exists(file):
+                os.remove(file)
+            else:
+                print(f"The file {file} does not exist")
+        except Exception as e:
+            print(f"Error occurred while trying to remove the file {file}: {e}")
+
+    faiss_index, save_faiss_index = init_faiss_index(faiss_index_file_name)
 
     for idx, intent_item in enumerate(intent_list):
         id_text_with_index = f"{intent_item[0]}_{idx}"
@@ -35,8 +61,10 @@ def generate_index_for_intent_detection():
                            faiss_index=faiss_index, save_faiss_index=save_faiss_index,
                            storing_instruction=storing_instruction)
 
+    generate_index_for_intent_detection_is_running = False
 
 def get_intent_from_text(command_text):
+    global faiss_index, save_faiss_index
     global intent_list
     intent_list = parse_plugin_commands_examples()
 
