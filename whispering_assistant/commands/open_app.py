@@ -12,6 +12,8 @@ class OpenApp(BaseCommand):
     examples = [
         'open firefox',
         'open gimp',
+        'open app',
+        'open application',
         'open spotify'
     ]
     def run(self, text_parameter, *args, **kwargs):

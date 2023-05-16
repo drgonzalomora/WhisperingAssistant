@@ -21,10 +21,9 @@ class OpenLink(BaseCommand):
         "subject": []
     }
     examples = [
-        'open link accounting sheets',
-        'go to accounting sheets link',
-        'open web shopping database',
-        'go to shopping database',
+        'open link',
+        'go to link',
+        'open web'
     ]
 
     def run(self, text_parameter, *args, **kwargs):
