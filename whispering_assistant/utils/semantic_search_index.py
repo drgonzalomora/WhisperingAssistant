@@ -82,7 +82,7 @@ def generate_index_csv(input_text=None, id_text=None, file_name="", storing_inst
     print("index count should match!", faiss_index.ntotal == csv_row_count)
 
 
-def search_index_csv(search_text, n=3, pprint=True, file_name="", similarity_threshold=0.9,
+def search_index_csv(search_text, n=3, pprint=True, file_name="", similarity_threshold=0.909,
                      faiss_index=None, query_instruction=""):
     if not faiss_index:
         return print('No faiss_index or save_faiss_index')

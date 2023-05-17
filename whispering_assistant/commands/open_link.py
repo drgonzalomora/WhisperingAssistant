@@ -22,8 +22,10 @@ class OpenLink(BaseCommand):
     }
     examples = [
         'open link',
-        'go to link',
-        'open web'
+        'open web',
+        'open link for',
+        'open web for',
+        'go to link'
     ]
 
     def run(self, text_parameter, *args, **kwargs):

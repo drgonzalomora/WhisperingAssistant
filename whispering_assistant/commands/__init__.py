@@ -109,7 +109,7 @@ def execute_plugin_by_keyword(text, run_command=True, skip_fallback=False, *args
     words_array = [word.strip() for word in re.split(r'[^\w\s]+|(?<=\s)', result_text_lower) if word.strip()]
     words_cleaned = ' '.join(words_array)
 
-    first_four_words = ' '.join(result_text_lower.split()[:4])
+    first_four_words = ' '.join(result_text_lower.split()[:5])
     first_seven_words = ' '.join(result_text_lower.split()[:7])
     detected_intent, _ = get_intent_from_text(first_seven_words)
 

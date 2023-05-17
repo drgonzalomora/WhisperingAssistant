@@ -63,6 +63,7 @@ def generate_index_for_intent_detection():
 
     generate_index_for_intent_detection_is_running = False
 
+
 def get_intent_from_text(command_text):
     global faiss_index, save_faiss_index
     global intent_list
@@ -73,6 +74,8 @@ def get_intent_from_text(command_text):
 
     if not os.path.exists(default_intent_index):
         generate_index_for_intent_detection()
+
+    print("command_text", command_text)
 
     top_result, _ = search_index_csv(command_text, n=1, file_name=default_intent_index, faiss_index=faiss_index,
                                      query_instruction=query_instruction)
@@ -95,7 +98,6 @@ def get_intent_from_text(command_text):
     print("top_result_prompt", top_result_details)
 
     return top_result_details[0], top_result_details
-
 
 # parse_plugin_commands_examples()
 # import whispering_assistant.commands

@@ -8,8 +8,9 @@ class UpdateDictionary(BaseCommand):
     keywords = {
         "action": ["update", "change"], "subject": ["dictionary", "terminology"]}
     examples = [
-        'update dictionary',
-        'change dictionary'
+        'update the word map',
+        'update the word list',
+        'update the dictionary list',
     ]
 
     def run(self, text_parameter, raw_text, *args, **kwargs):
