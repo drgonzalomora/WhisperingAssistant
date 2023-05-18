@@ -42,11 +42,11 @@ class OpenPycharm(BaseCommand):
         "subject": []
     }
     examples = [
-        'open py charm',
-        'open pycharm',
-        'open pycharm for',
-        'pycharm for',
-        'open project on py charm'
+        'open py charm for TOPIC',
+        'open pycharm TOPIC',
+        'open pycharm for TOPIC',
+        'pycharm for TOPIC',
+        'open TOPIC on py charm'
     ]
 
     def run(self, text_parameter, *args, **kwargs):
