@@ -13,6 +13,8 @@ class MediaPlayBack(BaseCommand):
     }
     examples = [
         'play music',
+        'pause music',
+        'stop music',
         'play a song',
         'next song',
         'play next song',
@@ -27,7 +29,7 @@ class MediaPlayBack(BaseCommand):
             time.sleep(0.5)
             subprocess.run(["xdotool", "key", "XF86AudioPrev"])
 
-        elif 'play' in raw_text or 'pause' in raw_text:
+        elif 'play' in raw_text or 'pause' in raw_text or 'stop' in raw_text:
             subprocess.run(["xdotool", "key", "XF86AudioPlay"])
 
         elif 'skip' in raw_text or 'next' in raw_text:
