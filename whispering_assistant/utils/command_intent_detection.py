@@ -39,20 +39,6 @@ def generate_index_for_intent_detection():
 
     intent_list = parse_plugin_commands_examples()
 
-    # List of files to delete if they exist
-    files_to_delete = [faiss_index_file_name, default_intent_index]
-
-    # Delete files if they exist
-    for file in files_to_delete:
-        print(f"Attempting to delete: {file}")
-        try:
-            if os.path.exists(file):
-                os.remove(file)
-            else:
-                print(f"The file {file} does not exist")
-        except Exception as e:
-            print(f"Error occurred while trying to remove the file {file}: {e}")
-
     faiss_index, save_faiss_index = init_faiss_index(faiss_index_file_name)
 
     for idx, intent_item in enumerate(intent_list):

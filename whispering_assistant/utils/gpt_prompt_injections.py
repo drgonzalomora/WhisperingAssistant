@@ -8,6 +8,10 @@ default_csv_prompts = "/home/joshua/extrafiles/projects/WhisperingAssistant/whis
 default_md_prompts = "/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/docs/gpt_prompt_templates.md"
 faiss_index_file_name = "/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/docs/faiss_index.idx"
 
+
+default_csv_prompts_gpt_prompt_templates = default_csv_prompts
+faiss_index_file_name_gpt_prompt_templates = faiss_index_file_name
+
 query_instruction = 'Represent the prompt name for retrieving supporting documents: '
 storing_instruction = 'Represent the prompt description document for retrieval: '
 
@@ -51,9 +55,12 @@ prompt_list = parse_markdown()
 
 
 def generate_index_prompt_for_injection():
+    global faiss_index, save_faiss_index
     global prompt_list
 
     prompt_list = parse_markdown()
+
+    faiss_index, save_faiss_index = init_faiss_index(faiss_index_file_name)
 
     for prompt_item in prompt_list:
         generate_index_csv(input_text=prompt_item['desc'], id_text=prompt_item['title'], file_name=default_csv_prompts,
@@ -62,6 +69,8 @@ def generate_index_prompt_for_injection():
 
 
 def get_prompt_for_injection(search_text):
+    global faiss_index, save_faiss_index
+
     if not search_text:
         return None, None
 
