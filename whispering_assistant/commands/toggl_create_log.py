@@ -45,6 +45,7 @@ class TogglRecordTimeCommand(BaseCommand):
     examples = [
         'record my time',
         'record time log'
+        'record time'
     ]
 
     def run(self, text_parameter, *args, **kwargs):

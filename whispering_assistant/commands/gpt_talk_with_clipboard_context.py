@@ -107,8 +107,12 @@ class TalkGPTWithClipboardContext(BaseCommand):
     examples = [
         'ask question to nora',
         'send relation to nora',
-        'use clipboard and ask question to ruby',
-        'ask question to nora and use the prompt helper'
+        'give context to nora',
+        'talk to nora',
+        'ask question to ruby',
+        'send relation to ruby',
+        'give context to ruby',
+        'talk to ruby',
     ]
 
     def run(self, text_parameter, raw_text, *args, **kwargs):
