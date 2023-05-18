@@ -23,3 +23,29 @@ def set_volume(new_volume):
         # Apply the new volume to the sink
         pulse.volume_set(sink, new_volume_object)
 
+
+def set_microphone_volume(mic_name, volume_level):
+    """
+    Set microphone volume.
+
+    Parameters:
+        mic_name (str): The name of the microphone.
+        volume_level (float): The volume level as a fraction between 0 and 1.
+
+    """
+    with pulsectl.Pulse('volume-controller') as pulse:
+        for source in pulse.source_list():
+            if mic_name in source.name:
+                pulse.volume_set_all_chans(source, volume_level)
+
+
+def list_microphones():
+    """
+    List all available microphones.
+    """
+    with pulsectl.Pulse('microphone-lister') as pulse:
+        for source in pulse.source_list():
+            print(source.name)
+
+# Print all microphones
+# list_microphones()

@@ -8,13 +8,13 @@ from pydub.silence import detect_silence
 from whispering_assistant.commands import execute_plugin_by_keyword, generate_prompts_for_short_commands
 from whispering_assistant.commands.command_base_template import command_types
 from whispering_assistant.configs.config import AUDIO_FILES_DIR, CHANNELS, RATE, CHUNK, FORMAT, \
-    SILENCE_THRESHOLD, CONSECUTIVE_SILENCE_CHUNKS
+    SILENCE_THRESHOLD, CONSECUTIVE_SILENCE_CHUNKS, MIC_INPUT_GAIN
 from whispering_assistant.states_manager import global_var_state
 from whispering_assistant.states_manager.window_manager_messages import message_queue
 from whispering_assistant.utils.audio import play_sound
 from whispering_assistant.utils.performance import print_time_profile
 from whispering_assistant.utils.prompt import get_prompt_cache, generate_related_keywords_prompt
-from whispering_assistant.utils.volumes import get_volume, set_volume
+from whispering_assistant.utils.volumes import get_volume, set_volume, set_microphone_volume
 from whispering_assistant.utils.window_dialogs import activate_window, get_active_window_id
 
 
@@ -145,6 +145,7 @@ def start_mic_to_transcription(model=None):
     set_volume(5)
 
     stream = audio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
+    set_microphone_volume('alsa_input', MIC_INPUT_GAIN)  # 50% volume
     elapsed_time = time.time() - start_time
     print(f"Time taken for recording audio: {elapsed_time:.5f} seconds")
 
@@ -192,6 +193,7 @@ def start_mic_to_transcription(model=None):
                                          frame_rate=RATE, channels=CHANNELS)
             is_silent = detect_silence(audio_segment, min_silence_len=180, silence_thresh=SILENCE_THRESHOLD)
             print("is_silent", is_silent)
+            print("audio_segment.dBFS", audio_segment.dBFS)
             print("📍 silence_counter", silence_counter, silence_reset_counter)
 
             if is_silent:
