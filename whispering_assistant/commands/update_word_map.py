@@ -13,7 +13,7 @@ class UpdateWordMap(BaseCommand):
         'change word list',
         'update the word map',
         'update the word list',
-        'update the dictionary list',
+        'update the dictionary list'
     ]
 
     def run(self, text_parameter, raw_text, *args, **kwargs):

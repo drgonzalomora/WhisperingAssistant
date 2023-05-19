@@ -14,7 +14,8 @@ class OpenApp(BaseCommand):
         'open gimp',
         'open app',
         'open application',
-        'open spotify'
+        'open spotify',
+        'user wants to open an application',
     ]
     def run(self, text_parameter, *args, **kwargs):
         import pyautogui

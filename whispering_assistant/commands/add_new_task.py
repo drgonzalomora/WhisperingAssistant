@@ -20,7 +20,10 @@ class AddTask(BaseCommand):
     examples = [
         'create a task',
         'add a task',
-        'create a note'
+        'create a note',
+        'user wants to create a task',
+        'user wants to create a reminder',
+        'user wants to create a note'
     ]
 
     def run(self, text_parameter, raw_text, *args, **kwargs):
