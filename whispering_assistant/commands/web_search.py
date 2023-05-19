@@ -12,7 +12,10 @@ class WebSearch(BaseCommand):
         'find on the web',
         'ask google',
         'search the web',
-        'search with bing'
+        'search with bing',
+        'user wants to search web for a question',
+        'user intends to search with google for a TOPIC',
+        'user intends to search with google for a question'
     ]
 
     def run(self, text_parameter, raw_text, *args, **kwargs):

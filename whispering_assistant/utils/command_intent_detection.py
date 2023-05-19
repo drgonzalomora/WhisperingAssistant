@@ -7,8 +7,8 @@ from whispering_assistant.utils.vector_embeddings_storage import init_faiss_inde
 default_intent_index = "/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/docs/plugin_commands_intents.csv"
 faiss_index_file_name = "/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/docs/faiss_index_intents.idx"
 
-query_instruction = 'Represent the command intent for retrieving similar examples: '
-storing_instruction = 'Represent the command intent examples for retrieval: '
+query_instruction = 'Represent the user intent for retrieving similar examples or intent: '
+storing_instruction = 'Represent the user intent examples or description for retrieval: '
 
 faiss_index, save_faiss_index = init_faiss_index(faiss_index_file_name)
 generate_index_for_intent_detection_is_running = False

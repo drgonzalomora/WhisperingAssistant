@@ -17,15 +17,22 @@ class OpenLink(BaseCommand):
     trigger = "open_link"
     command_type = command_types['CHAINABLE_SHORT']
     keywords = {
-        "action": ["open link", "open web"],
-        "subject": []
+        "action": ["open link", "open web", "open"],
+        "subject": ["link for", "link", "web"]
     }
     examples = [
         'open link',
+        'open link TOPIC',
         'open web',
         'open link for',
+        'open link for TOPIC',
         'open web for',
-        'go to link'
+        'go to link',
+        'user wants to open a link from history',
+        'user wants to open a link for a TOPIC',
+        'user wants to open a link',
+        'user intends to open link from bookmarks',
+        'user intends to open link from saved URLs'
     ]
 
     def run(self, text_parameter, *args, **kwargs):

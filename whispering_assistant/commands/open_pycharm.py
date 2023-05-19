@@ -46,7 +46,11 @@ class OpenPycharm(BaseCommand):
         'open pycharm TOPIC',
         'open pycharm for TOPIC',
         'pycharm for TOPIC',
-        'open TOPIC on py charm'
+        'open TOPIC on py charm',
+        'open a project with pycharm',
+        'user wants to open pycharm for a project',
+        'user intends to open pycharm for a project',
+        'user intends to open pycharm for a directory'
     ]
 
     def run(self, text_parameter, *args, **kwargs):
