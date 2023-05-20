@@ -2,20 +2,28 @@ from datetime import datetime
 import time
 
 import pyaudio
+from faster_whisper import WhisperModel
 from pydub import AudioSegment
 from pydub.silence import detect_silence
 
 from whispering_assistant.commands import execute_plugin_by_keyword, generate_prompts_for_short_commands
 from whispering_assistant.commands.command_base_template import command_types
 from whispering_assistant.configs.config import AUDIO_FILES_DIR, CHANNELS, RATE, CHUNK, FORMAT, \
-    SILENCE_THRESHOLD, CONSECUTIVE_SILENCE_CHUNKS, MIC_INPUT_GAIN
+    SILENCE_THRESHOLD, CONSECUTIVE_SILENCE_CHUNKS, MIC_INPUT_GAIN, WhisperModel_tiny_PATH
 from whispering_assistant.states_manager import global_var_state
 from whispering_assistant.states_manager.window_manager_messages import message_queue
-from whispering_assistant.utils.audio import play_sound
+from whispering_assistant.utils.audio import play_sound, SoundHandler
 from whispering_assistant.utils.performance import print_time_profile
 from whispering_assistant.utils.prompt import get_prompt_cache, generate_related_keywords_prompt
 from whispering_assistant.utils.volumes import get_volume, set_volume, set_microphone_volume
 from whispering_assistant.utils.window_dialogs import activate_window, get_active_window_id
+
+model_tiny = WhisperModel(WhisperModel_tiny_PATH, device="cuda", compute_type="int8_float16",
+                          num_workers=5)
+
+sound_handler = SoundHandler()
+sound_handler.load_sound(
+    "/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/sound/whistle.mp3")
 
 
 def model_transcribe_cache_init(model, filepath, beam_size=1, best_of=1):
@@ -31,7 +39,7 @@ def save_transcription(transcription, timestamp):
         f.write(transcription)
 
 
-def save_file_then_transcribe(frames, model, audio, context_prompt, transcription_args=None):
+def save_file_then_transcribe(frames, model, audio, context_prompt, transcription_args=None, use_model_tiny=False):
     if transcription_args is None:
         transcription_args = {}
     start_time = time.time()
@@ -49,10 +57,21 @@ def save_file_then_transcribe(frames, model, audio, context_prompt, transcriptio
     print("💡Transcribing audio...")
 
     start_time = time.time()
-    segments, info = model.transcribe(processed_audio_file_name, beam_size=5, best_of=1, temperature=0, language="en",
-                                      initial_prompt=context_prompt, without_timestamps=True, word_timestamps=False,
-                                      vad_filter=False, vad_parameters=dict(min_silence_duration_ms=1000),
-                                      **transcription_args, )
+
+    if use_model_tiny:
+        segments, info = model_tiny.transcribe(processed_audio_file_name, beam_size=10, best_of=1, temperature=0,
+                                               language="en",
+                                               initial_prompt=context_prompt, without_timestamps=True,
+                                               word_timestamps=False,
+                                               vad_filter=False, vad_parameters=dict(min_silence_duration_ms=1000),
+                                               **transcription_args, )
+    else:
+        segments, info = model.transcribe(processed_audio_file_name, beam_size=5, best_of=1, temperature=0,
+                                          language="en",
+                                          initial_prompt=context_prompt, without_timestamps=True, word_timestamps=False,
+                                          vad_filter=False, vad_parameters=dict(min_silence_duration_ms=1000),
+                                          **transcription_args, )
+
     print_time_profile(start_time, "generators")
 
     start_time = time.time()
@@ -69,10 +88,15 @@ def save_file_then_transcribe(frames, model, audio, context_prompt, transcriptio
     print("segment_end", segment_end)
     save_transcription(result_text, timestamp)
 
+    if result_text:
+        result_text = result_text.lstrip()
+
     return result_text
 
 
-def check_transcript_for_short_commands(stream, model, audio):
+def check_transcript_for_short_commands(stream, audio):
+    model = model_tiny
+
     print("Showing transcribing window...")
     max_time_check_short_command = 2.5
     frames = []
@@ -118,42 +142,33 @@ def start_mic_to_transcription(model=None):
     start_time = time.time()
     message_queue.put(('create_avatar', 'show'))
     message_queue.put(('create_avatar', 'set_content', "❌ Starting", "❌ Starting..."))
-    elapsed_time = time.time() - start_time
-    print(f"Time taken for opening transcribing window: {elapsed_time:.5f} seconds")
+    print_time_profile(start_time, "opening transcribing window")
 
     start_time = time.time()
     global_var_state.is_transcribing = "GO"
     global_var_state.recently_transcribed = True
-    elapsed_time = time.time() - start_time
-    print(f"Time taken for setting global variables: {elapsed_time:.5f} seconds")
-
-    start_time = time.time()
-    window_id = get_active_window_id()
-    elapsed_time = time.time() - start_time
-    print(f"Time taken for getting the current window: {elapsed_time:.5f} seconds")
+    print_time_profile(start_time, "set global var")
 
     start_time = time.time()
     prev_volume = get_volume()
-    elapsed_time = time.time() - start_time
-    print(f"VolumeL {prev_volume}")
-    print(f"Time taken for getting current volume level: {elapsed_time:.5f} seconds")
+    print_time_profile(start_time, "get volume")
+
+    start_time = time.time()
+    sound_handler.play_sound(
+        "/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/sound/whistle.mp3")
+    print_time_profile(start_time, "play sound cue")
 
     start_time = time.time()
     audio = pyaudio.PyAudio()
-
-    play_sound('/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/sound/whistle.mp3')
-    set_volume(5)
-
     stream = audio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
     set_microphone_volume('alsa_input', MIC_INPUT_GAIN)  # 50% volume
-    elapsed_time = time.time() - start_time
-    print(f"Time taken for recording audio: {elapsed_time:.5f} seconds")
+    print_time_profile(start_time, "open mic stream")
 
     frames, \
         chainable_commands, \
         skip_next_transcription, \
         next_transcription_max_time, \
-        next_transcription_cut_off_factor = check_transcript_for_short_commands(stream, audio=audio, model=model)
+        next_transcription_cut_off_factor = check_transcript_for_short_commands(stream, audio=audio)
 
     silence_counter = 0
     silence_reset_counter = 0
@@ -233,24 +248,17 @@ def start_mic_to_transcription(model=None):
 
         # Create a second transcription where it uses the prompt for the related keywords.
         prev_result_text = save_file_then_transcribe(frames=frames_for_processing, model=model, audio=audio,
-                                                     context_prompt=context_prompt)
+                                                     context_prompt=context_prompt, use_model_tiny=True)
         result_text = prev_result_text
 
         if len(frames) > 30:
             context_prompt_related_keywords = generate_related_keywords_prompt(prev_result_text)
-
-            if context_prompt_related_keywords:
-                result_text = save_file_then_transcribe(frames=frames, model=model, audio=audio,
-                                                        context_prompt=context_prompt_related_keywords)
+            result_text = save_file_then_transcribe(frames=frames, model=model, audio=audio,
+                                                    context_prompt=context_prompt_related_keywords)
 
         print("💡 result_text comparison")
         print("result_text prev:", prev_result_text)
         print("result_text after:", result_text)
-
-        print("Activate prev window...")
-        start_time = time.time()
-        activate_window(window_id)
-        print_time_profile(start_time, "activate window")
 
         print("🕵️ Analyzing transcription what command to run")
         start_time = time.time()

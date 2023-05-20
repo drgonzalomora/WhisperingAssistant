@@ -1,7 +1,12 @@
+import time
+
 import librosa
 from pydub.silence import split_on_silence
 from pydub import AudioSegment
 from playsound import playsound
+import threading
+
+from whispering_assistant.utils.volumes import set_volume
 
 
 def slow_down_audio(input_file, slowdown_factor=0.80):
@@ -12,7 +17,7 @@ def slow_down_audio(input_file, slowdown_factor=0.80):
     y_slow = librosa.effects.time_stretch(y, rate=slowdown_factor)
 
     # Save the slowed down audio
-    sf.write(input_file, y_slow, sr, subtype='PCM_24')
+    # sf.write(input_file, y_slow, sr, subtype='PCM_24')
     return input_file
 
 
@@ -36,3 +41,28 @@ def play_sound(file_path):
         playsound(file_path)
     except Exception as e:
         print(f"An error occurred while playing the sound: {e}")
+
+
+class SoundHandler:
+    def __init__(self):
+        self.sounds = {}
+
+    def load_sound(self, file_path):
+        # Here you might load and decode the file to an audio format
+        # that your sound library can play. This is dependent on the library you're using.
+        # For playsound, we can't preload the file, but in other libraries, this would be possible.
+        self.sounds[file_path] = file_path
+
+    def play_sound(self, file_path):
+        if file_path not in self.sounds:
+            self.load_sound(file_path)
+        try:
+            def play_and_set_volume():
+                time.sleep(0.1)
+                playsound(self.sounds[file_path])
+                set_volume(5)
+
+            sound_thread = threading.Thread(target=play_and_set_volume)
+            sound_thread.start()
+        except Exception as e:
+            print(f"An error occurred while playing the sound: {e}")

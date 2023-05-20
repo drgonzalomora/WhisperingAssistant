@@ -38,7 +38,16 @@ OUTPUT_FILE_NAME = "output.wav"
 # Whisper
 WhisperModel_DEVICE = "cuda"
 WhisperModel_WORKERS = 5
-WhisperModel_PATH = "/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/ml/whisper-large-v2-ct2"
+
+# WhisperModel_PATH = "/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/ml/whisper-large-v2-ct2"
+# tiny, tiny.en, tiny
+# base, base.en, base
+# small, small.en, small
+# medium, medium.en, medium
+# large, N/A, large
+
+WhisperModel_PATH = "large-v2"
+WhisperModel_tiny_PATH = "small"
 
 # compute_type="int8"
 # compute_type="int8_float16"
