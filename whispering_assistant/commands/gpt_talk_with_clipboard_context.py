@@ -32,6 +32,7 @@ def generate_examples_of_prompt_injections():
         return [command for section in parsed_markdown for command in section['sample_command']]
 
     list_md = parse_markdown()
+    print(list_md)
     all_sample_commands = get_all_sample_commands(list_md)
     print(all_sample_commands)
 

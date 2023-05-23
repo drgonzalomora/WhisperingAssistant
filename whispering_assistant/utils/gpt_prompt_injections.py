@@ -27,14 +27,16 @@ def parse_markdown(markdown=default_md_prompts):
     if not markdown_content:
         return None
 
-    sections = re.split(r'\n---\n', markdown_content.strip())
+    sections = re.split(r'\n------\n', markdown_content.strip())
     parsed_sections = []
 
     for section in sections:
         lines = section.strip().split('\n')
         title = lines[0][2:].strip()
         desc = re.search(r'(?<=\*\*desc:\*\*)\s*(.+?)(?=\n\*\*)', section, flags=re.DOTALL).group(1).strip()
-        sample_command = [item.lstrip(' -') for item in re.search(r'(?<=\*\*sample_command:\*\*)\s*(.+?)(?=\n\*\*)', section, flags=re.DOTALL).group(1).strip().split('\n')]
+        sample_command = [item.lstrip(' -') for item in
+                          re.search(r'(?<=\*\*sample_command:\*\*)\s*(.+?)(?=\n\*\*)', section, flags=re.DOTALL).group(
+                              1).strip().split('\n')]
         prompt = re.search(r'(?<=```\n)(.+)(?=\n```)', section, flags=re.DOTALL).group(1).strip()
 
         parsed_sections.append({
