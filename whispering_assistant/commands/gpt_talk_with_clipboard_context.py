@@ -1,8 +1,7 @@
-import re
 import time
 import pyclip
 from whispering_assistant.commands.command_base_template import BaseCommand, command_types
-from whispering_assistant.utils.gpt_prompt_injections import get_prompt_for_injection
+from whispering_assistant.utils.gpt_prompt_injections import get_prompt_for_injection, parse_markdown
 
 GPT3_ALIAS = 'ruby'
 GPT4_ALIAS = 'nora'
@@ -26,6 +25,25 @@ image3_gpt4_url = f'{root_dir}/CHAT_GPT4_URL.png'
 x4, y4, width4, height4 = 630, 0, 3840, 1800
 region4 = (x4, y4, width4, height4)
 image4_chat_down_arrow = f'{root_dir}/CHAT_DOWN_ARROW.png'
+
+
+def generate_examples_of_prompt_injections():
+    def get_all_sample_commands(parsed_markdown):
+        return [command for section in parsed_markdown for command in section['sample_command']]
+
+    list_md = parse_markdown()
+    all_sample_commands = get_all_sample_commands(list_md)
+    print(all_sample_commands)
+
+    def append_names_to_commands(commands, names=None):
+        if names is None:
+            names = [GPT3_ALIAS, GPT4_ALIAS]
+        return [f'{name}, {command}' for name in names for command in commands]
+
+    updated_commands = append_names_to_commands(all_sample_commands)
+    print(updated_commands)
+
+    return updated_commands
 
 
 def send_question_to_gpt(query, new_conversation=False, gpt_type='GPT3', check_gpt_type=False):
@@ -98,22 +116,24 @@ def send_question_to_gpt(query, new_conversation=False, gpt_type='GPT3', check_g
 
 
 class TalkGPTWithClipboardContext(BaseCommand):
+    sub_commands_for_prompt_injection = generate_examples_of_prompt_injections()
     trigger = "talk_gpt_with_clipboard_context"
     command_type = command_types['CHAINABLE_LONG']
     keywords = {
         "action": ["relation", "clipboard", "context", "question"],
         "subject": ["nora", "ruby"]
     }
+    required_keywords = ['ruby', 'nora']
     examples = [
-        'ask question to nora',
-        'send relation to nora',
-        'give context to nora',
-        'talk to nora',
-        'ask question to ruby',
-        'send relation to ruby',
-        'give context to ruby',
-        'talk to ruby',
-    ]
+                   'ask question to nora',
+                   'send relation to nora',
+                   'give context to nora',
+                   'talk to nora',
+                   'ask question to ruby',
+                   'send relation to ruby',
+                   'give context to ruby',
+                   'talk to ruby',
+               ] + sub_commands_for_prompt_injection
 
     def run(self, text_parameter, raw_text, *args, **kwargs):
         modified_text = text_parameter

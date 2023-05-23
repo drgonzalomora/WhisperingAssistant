@@ -121,6 +121,13 @@ def execute_plugin_by_keyword(text, run_command=True, skip_fallback=False, *args
                 print("found plugin using intent", detected_intent)
                 match, text_parameter = check_strings(words_cleaned, plugin.keywords, raw_text=result_text_lower)
                 print("text_parameter", text_parameter)
+                print("result_text_lower", result_text_lower)
+
+                if hasattr(plugin, 'required_keywords'):
+                    # Check that any required keywords are in the text
+                    if not any(required_keyword in result_text_lower for required_keyword in plugin.required_keywords):
+                        print('missing required keywords for plugin', plugin.trigger.lower())
+                        continue
 
                 plugin_used = plugin
 
