@@ -83,7 +83,7 @@ def get_intent_from_text(command_text):
 
     print("top_result_prompt", top_result_details)
 
-    return top_result_details[0], top_result_details
+    return top_result_details[0], top_result
 
 # parse_plugin_commands_examples()
 # import whispering_assistant.commands

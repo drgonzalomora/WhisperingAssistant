@@ -110,9 +110,10 @@ def execute_plugin_by_keyword(text, run_command=True, skip_fallback=False, *args
     words_cleaned = ' '.join(words_array)
 
     first_seven_words = ' '.join(result_text_lower.split()[:6])
-    detected_intent, _ = get_intent_from_text(first_seven_words)
+    detected_intent, detected_intent_details = get_intent_from_text(first_seven_words)
 
     print("detected_intent", detected_intent)
+    print("detected_intent_details", detected_intent_details)
 
     for plugin in COMMAND_PLUGINS.values():
         if plugin.trigger.lower() != FALL_BACK_COMMAND:
@@ -134,7 +135,8 @@ def execute_plugin_by_keyword(text, run_command=True, skip_fallback=False, *args
                 if run_command:
                     print('running plugin', plugin.trigger.lower())
                     prev_text_parameter = text_parameter
-                    plugin.run(*args, text_parameter=text_parameter, raw_text=text_for_ingestion, **kwargs)
+                    plugin.run(*args, text_parameter=text_parameter, raw_text=text_for_ingestion,
+                               command_intent=detected_intent_details, **kwargs)
 
                 found = True
                 break

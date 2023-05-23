@@ -1,7 +1,8 @@
 import time
 import pyclip
 from whispering_assistant.commands.command_base_template import BaseCommand, command_types
-from whispering_assistant.utils.gpt_prompt_injections import get_prompt_for_injection, parse_markdown
+from whispering_assistant.utils.gpt_prompt_injections import parse_markdown
+import difflib
 
 GPT3_ALIAS = 'ruby'
 GPT4_ALIAS = 'nora'
@@ -116,8 +117,28 @@ def send_question_to_gpt(query, new_conversation=False, gpt_type='GPT3', check_g
         print("❌ Image 1 logo not found on the screen.")
 
 
+def get_best_match(query, items):
+    """
+    Helper function to get the best match for a query from a list of items.
+    """
+    sample_commands = [command for item in items for command in item['sample_command']]
+    match = difflib.get_close_matches(query, sample_commands, n=1, cutoff=0.88)
+
+    print("match", match)
+
+    # If there is a match
+    if match:
+        match_command = match[0]
+        for item in items:
+            if match_command in item['sample_command']:
+                return item
+    else:
+        return None
+
+
 class TalkGPTWithClipboardContext(BaseCommand):
     sub_commands_for_prompt_injection = generate_examples_of_prompt_injections()
+    list_md = parse_markdown()
     trigger = "talk_gpt_with_clipboard_context"
     command_type = command_types['CHAINABLE_LONG']
     keywords = {
@@ -136,7 +157,7 @@ class TalkGPTWithClipboardContext(BaseCommand):
                    'talk to ruby',
                ] + sub_commands_for_prompt_injection
 
-    def run(self, text_parameter, raw_text, *args, **kwargs):
+    def run(self, text_parameter, raw_text, command_intent=None, *args, **kwargs):
         modified_text = text_parameter
 
         chatgpt_type = 'GPT4' if GPT4_ALIAS in raw_text.lower() else 'GPT3'
@@ -148,8 +169,17 @@ class TalkGPTWithClipboardContext(BaseCommand):
         check_gpt_type = True if not only_resume_conversation else False
         curr_clipboard = None
 
-        truncated_text_for_prompt_check = " ".join(text_parameter.lower().split()[:7])
-        prompt_template, _ = get_prompt_for_injection(truncated_text_for_prompt_check)
+        prompt_template = None
+
+        if command_intent:
+            print("💖 command_intent", command_intent)
+            print("💖 input_text", command_intent['input_text'])
+
+            best_match = get_best_match(query=command_intent['input_text'], items=self.list_md)
+            print("best_match", best_match)
+
+            if best_match and 'prompt' in best_match:
+                prompt_template = best_match['prompt']
 
         # Handle Clipboard injection
         if clipboard_needed:
