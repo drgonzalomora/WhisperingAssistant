@@ -8,7 +8,6 @@ default_csv_prompts = "/home/joshua/extrafiles/projects/WhisperingAssistant/whis
 default_md_prompts = "/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/docs/gpt_prompt_templates.md"
 faiss_index_file_name = "/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/docs/faiss_index.idx"
 
-
 default_csv_prompts_gpt_prompt_templates = default_csv_prompts
 faiss_index_file_name_gpt_prompt_templates = faiss_index_file_name
 
@@ -34,14 +33,14 @@ def parse_markdown(markdown=default_md_prompts):
     for section in sections:
         lines = section.strip().split('\n')
         title = lines[0][2:].strip()
-        desc = re.search(r'(?<=\*\*desc:\*\*)\s*(.+)', section).group(1).strip()
-        input_required = re.search(r'(?<=\*\*input_required:\*\*)\s*(.+)', section).group(1).strip()
-        prompt = re.search(r'(?<=```\n)(.+)(?=\n```)', section, re.DOTALL).group(1).strip()
+        desc = re.search(r'(?<=\*\*desc:\*\*)\s*(.+?)(?=\n\*\*)', section, flags=re.DOTALL).group(1).strip()
+        sample_command = [item.lstrip(' -') for item in re.search(r'(?<=\*\*sample_command:\*\*)\s*(.+?)(?=\n\*\*)', section, flags=re.DOTALL).group(1).strip().split('\n')]
+        prompt = re.search(r'(?<=```\n)(.+)(?=\n```)', section, flags=re.DOTALL).group(1).strip()
 
         parsed_sections.append({
             'title': title,
             'desc': desc,
-            'input_required': input_required == 'true',
+            'sample_command': [item.strip() for item in sample_command],
             'prompt': prompt
         })
 
