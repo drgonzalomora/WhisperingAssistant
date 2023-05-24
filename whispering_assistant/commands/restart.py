@@ -11,6 +11,7 @@ class Restart(BaseCommand):
         "action": ["restart", "reboot"],
         "subject": ["laptop", "computer"]
     }
+    required_keywords = ['computer', 'laptop']
     examples = [
         'restart computer',
         'reboot laptop'

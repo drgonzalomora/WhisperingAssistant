@@ -11,6 +11,7 @@ class Shutdown(BaseCommand):
         "action": ["shutdown", "shut down", "power off", "turn off"],
         "subject": ["laptop", "computer"]
     }
+    required_keywords = ['computer', 'laptop']
     examples = [
         'turn off laptop',
         'shutdown'

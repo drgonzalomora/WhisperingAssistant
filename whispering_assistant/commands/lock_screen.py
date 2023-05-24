@@ -12,6 +12,7 @@ class LockScreen(BaseCommand):
         "action": ["lock", "lock screen"],
         "subject": ["laptop", "computer"]
     }
+    required_keywords = ['computer', 'laptop', 'screen']
     examples = [
         'lock screen computer',
         'lock the screen'
