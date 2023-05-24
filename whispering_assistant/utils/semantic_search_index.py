@@ -25,21 +25,24 @@ def get_embedding(input_text, embedding_instruction=""):
         if cached_embedding is not None:
             print('returning a cached get_embedding')
             # Load the cached embedding from the database
-            return np.frombuffer(cached_embedding[0], dtype=np.float32).tolist()
+            return np.frombuffer(cached_embedding[0], dtype=np.float16).tolist()
 
     # If the input_text is not in the cache, calculate the embedding
-    input_text_embedding = model.encode([[embedding_instruction, input_text]])
+    input_text_embedding = model.encode([[embedding_instruction, input_text]], convert_to_tensor=True).half()
+
+    # Convert the PyTorch tensor to a numpy array before calling tobytes()
+    input_text_embedding_numpy = input_text_embedding.detach().cpu().numpy()
 
     # Cache the calculated embedding
     with sqlite3.connect(query_embeddings_cache_db_name) as conn:
         cursor = conn.cursor()
         cursor.execute(
             "INSERT INTO embeddings (input_text, embedding_instruction, embedding) VALUES (?, ?, ?)",
-            (input_text, embedding_instruction, input_text_embedding.tobytes())
+            (input_text, embedding_instruction, input_text_embedding_numpy.tobytes())
         )
         conn.commit()
 
-    return np.frombuffer(input_text_embedding.tobytes(), dtype=np.float32).tolist()
+    return np.frombuffer(input_text_embedding_numpy.tobytes(), dtype=np.float16).tolist()
 
 
 def is_duplicate(existing_data_df, id_text):
@@ -55,7 +58,7 @@ def generate_index_csv(input_text=None, id_text=None, file_name="", storing_inst
     input_text_embedding = get_embedding(input_text, embedding_instruction=storing_instruction)
 
     # Add the embedding to the Faiss index
-    faiss_index.add(np.array(input_text_embedding).astype('float32').reshape(1, -1))
+    faiss_index.add(np.array(input_text_embedding).astype('float16').reshape(1, -1))
 
     # Add the input text and id_text to a CSV file
     processed_data = [{'id_text': id_text, 'input_text': input_text}]
@@ -98,7 +101,7 @@ def search_index_csv(search_text, n=3, pprint=True, file_name="", similarity_thr
 
     start_time = time.time()
     search_text_embedding = get_embedding(search_text, embedding_instruction=query_instruction)
-    search_text_embedding = np.array(search_text_embedding).astype('float32').reshape(1,
+    search_text_embedding = np.array(search_text_embedding).astype('float16').reshape(1,
                                                                                       -1)  # Convert to 2D NumPy array
     print_time_profile(start_time, "Get Embedding")
 
