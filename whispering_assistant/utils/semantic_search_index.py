@@ -119,12 +119,15 @@ def search_index_csv(search_text, n=3, pprint=True, file_name="", similarity_thr
     print_time_profile(start_time, "Search Faiss")
 
     top_result = None
+    top_results = []
 
     if pprint:
         for idx, row in reversed_df.iterrows():
+            top_results.append({column: row[column] for column in results_df.columns})
+
             if row['similarity'] >= similarity_threshold:
                 top_result = {column: row[column] for column in results_df.columns}
             print(f"Intent: {row['input_text'][:200]}")
             print(f"Cosine Similarity: {row['similarity']}\n")
 
-    return top_result, results_df
+    return top_result, top_results
