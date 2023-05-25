@@ -29,18 +29,18 @@ image4_chat_down_arrow = f'{root_dir}/CHAT_DOWN_ARROW.png'
 
 
 def generate_examples_of_prompt_injections():
-    def get_all_sample_commands(parsed_markdown):
-        return [command for section in parsed_markdown for command in section['sample_command']]
+    def get_all_descriptions(parsed_markdown):
+        return [section.get('desc', '') for section in parsed_markdown]
 
     list_md = parse_markdown()
     # print(list_md)
-    all_sample_commands = get_all_sample_commands(list_md)
+    all_sample_commands = get_all_descriptions(list_md)
     # print(all_sample_commands)
 
     def append_names_to_commands(commands, names=None):
         if names is None:
             names = [GPT3_ALIAS, GPT4_ALIAS]
-        return [f'{name}, {command}' for name in names for command in commands]
+        return [command.replace("{assistant_name}", name) for name in names for command in commands]
 
     updated_commands = append_names_to_commands(all_sample_commands)
     # print(updated_commands)
@@ -121,7 +121,7 @@ def get_best_match(query, items):
     """
     Helper function to get the best match for a query from a list of items.
     """
-    sample_commands = [command for item in items for command in item['sample_command']]
+    sample_commands = [command for item in items for command in item['desc']]
     match = difflib.get_close_matches(query, sample_commands, n=1, cutoff=0.88)
 
     print("match", match)
@@ -148,17 +148,18 @@ class TalkGPTWithClipboardContext(BaseCommand):
     description = [
         "use the following tool for asking requests to nora with context or relation. command usually starts with 'send relation to nora' or 'send context to nora'"
     ]
+    description_sub_commands = sub_commands_for_prompt_injection
     required_keywords = ['ruby', 'nora']
     examples = [
-                   'ask question to nora',
-                   'send relation to nora',
-                   'give context to nora',
-                   'talk to nora',
-                   'ask question to ruby',
-                   'send relation to ruby',
-                   'give context to ruby',
-                   'talk to ruby',
-               ] + sub_commands_for_prompt_injection
+        'ask question to nora',
+        'send relation to nora',
+        'give context to nora',
+        'talk to nora',
+        'ask question to ruby',
+        'send relation to ruby',
+        'give context to ruby',
+        'talk to ruby',
+    ]
 
     def run(self, text_parameter, raw_text, command_intent=None, *args, **kwargs):
         modified_text = text_parameter
