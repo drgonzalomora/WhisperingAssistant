@@ -81,7 +81,7 @@ def get_intent_from_text(command_text):
     if not top_result_details:
         return None, None
 
-    print("top_result_prompt", top_result_details)
+    print("top_result_prompt", top_result_details[0])
 
     return top_result_details[0], top_result
 
