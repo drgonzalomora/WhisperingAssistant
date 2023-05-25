@@ -33,9 +33,9 @@ def generate_examples_of_prompt_injections():
         return [command for section in parsed_markdown for command in section['sample_command']]
 
     list_md = parse_markdown()
-    print(list_md)
+    # print(list_md)
     all_sample_commands = get_all_sample_commands(list_md)
-    print(all_sample_commands)
+    # print(all_sample_commands)
 
     def append_names_to_commands(commands, names=None):
         if names is None:
@@ -43,7 +43,7 @@ def generate_examples_of_prompt_injections():
         return [f'{name}, {command}' for name in names for command in commands]
 
     updated_commands = append_names_to_commands(all_sample_commands)
-    print(updated_commands)
+    # print(updated_commands)
 
     return updated_commands
 
@@ -145,6 +145,9 @@ class TalkGPTWithClipboardContext(BaseCommand):
         "action": ["relation", "clipboard", "context", "question"],
         "subject": ["nora", "ruby"]
     }
+    description = [
+        "use the following tool for asking requests to nora with context or relation. command usually starts with 'send relation to nora' or 'send context to nora'"
+    ]
     required_keywords = ['ruby', 'nora']
     examples = [
                    'ask question to nora',

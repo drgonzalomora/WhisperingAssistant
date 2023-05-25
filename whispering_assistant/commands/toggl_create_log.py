@@ -42,6 +42,9 @@ class TogglRecordTimeCommand(BaseCommand):
         "action": ["record"],
         "subject": ["time"]
     }
+    description = [
+        "use the following tool for recording time log. usually starts with the phrases: 'record time' or 'record my time'"
+    ]
     examples = [
         'record my time',
         'record time log'
@@ -55,4 +58,3 @@ class TogglRecordTimeCommand(BaseCommand):
         api_token = toggl_api_key
         workspace_id = toggl_workspace_id
         create_running_time_entry(api_token, workspace_id, description=text_parameter)
-

@@ -41,6 +41,9 @@ class OpenPycharm(BaseCommand):
         "action": ["pycharm", "py charm"],
         "subject": []
     }
+    description = [
+        "use the following tool for opening projects with pycharm for code development. usually start with the phrases: 'open pycharm'"
+    ]
     examples = [
         'open py charm for TOPIC',
         'open pycharm TOPIC',

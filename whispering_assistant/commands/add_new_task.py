@@ -17,6 +17,9 @@ class AddTask(BaseCommand):
     trigger = "add_task"
     command_type = command_types['CHAINABLE_LONG']
     keywords = {"action": ["add", "create"], "subject": ["task", "note", "reminder"]}
+    description = [
+        "use the following tool for creating new tasks, notes or reminders. usually starts with 'create a task'"
+    ]
     examples = [
         'create a task',
         'add a task',

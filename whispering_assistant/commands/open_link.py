@@ -20,6 +20,9 @@ class OpenLink(BaseCommand):
         "action": ["open link", "open web", "open"],
         "subject": ["link for", "link", "web"]
     }
+    description = [
+        "use the following tool for opening links and URLs. usually start with the phrases: 'open link', 'open web'"
+    ]
     examples = [
         'open link',
         'open link TOPIC',

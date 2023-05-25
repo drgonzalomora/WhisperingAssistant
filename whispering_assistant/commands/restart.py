@@ -12,6 +12,9 @@ class Restart(BaseCommand):
         "subject": ["laptop", "computer"]
     }
     required_keywords = ['computer', 'laptop']
+    description = [
+        "use the following tool for restarting a computer or laptop. example: 'restart the computer'"
+    ]
     examples = [
         'restart computer',
         'reboot laptop'

@@ -12,6 +12,9 @@ class Shutdown(BaseCommand):
         "subject": ["laptop", "computer"]
     }
     required_keywords = ['computer', 'laptop']
+    description = [
+        "use the following tool for shutting down a computer or laptop. example: 'shutdown the computer'"
+    ]
     examples = [
         'turn off laptop',
         'shutdown'

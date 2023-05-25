@@ -11,6 +11,9 @@ class SetVolume(BaseCommand):
         "action": ["change", "set", "update"],
         "subject": ["volume"]
     }
+    description = [
+        "use the following tool for adjusting the volume. example: 'set volume to 80%'"
+    ]
     examples = [
         'update volume to 10%',
         'decrease volume by 5%'

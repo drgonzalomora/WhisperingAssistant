@@ -7,6 +7,9 @@ class UpdateWordMap(BaseCommand):
     command_type = command_types['ONE_SHOT']
     keywords = {
         "action": ["update", "change"], "subject": ["word map", "wordmap"]}
+    description = [
+        "use the following tool for updating the official word map keyword list. example: 'update word map'"
+    ]
     examples = [
         'update word map',
         'change word map',

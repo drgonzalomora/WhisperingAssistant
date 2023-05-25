@@ -6,6 +6,9 @@ class IotLightsControl(BaseCommand):
     trigger = "iot_lights_control"
     command_type = command_types['ONE_SHOT']
     keywords = {"action": ["turn on", "turn off"], "subject": ["light", "lights"]}
+    description = [
+        "use the following tool for turning on or turning off the lights"
+    ]
     examples = [
         'turn on lights',
         'turn off lights'

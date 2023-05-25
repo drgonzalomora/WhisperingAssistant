@@ -10,6 +10,9 @@ class PauseHotWord(BaseCommand):
         "action": ["stop", "start"],
         "subject": ["hot-word", "listening", "hot word"]
     }
+    description = [
+        "use the following tool for stopping hotword detection or stop the computer from listening. examples are: 'stop listening'"
+    ]
     examples = [
         'stop listening',
         'start listening'

@@ -5,6 +5,9 @@ from whispering_assistant.commands.command_base_template import BaseCommand, com
 class WebSearch(BaseCommand):
     trigger = "search_the_web_via_ui"
     command_type = command_types['CHAINABLE_LONG']
+    description = [
+        "use the following tool for searching with google. command usually starts with 'search google'"
+    ]
     keywords = {
         "action": ["search", "ask", "find"], "subject": ["google", "web"]}
     examples = [

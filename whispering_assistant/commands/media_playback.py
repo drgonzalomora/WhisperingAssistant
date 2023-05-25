@@ -11,6 +11,9 @@ class MediaPlayBack(BaseCommand):
         "action": ["play", "pause", "next", "prev"],
         "subject": ["music", "video", "media", "song"]
     }
+    description = [
+        "use the following tool for media plaback commands like play, pause, stop, next. similar commands: play music, next music, stop the song"
+    ]
     examples = [
         'play music',
         'pause music',
