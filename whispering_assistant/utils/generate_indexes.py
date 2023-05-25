@@ -4,7 +4,7 @@ from whispering_assistant.utils.command_intent_detection import faiss_index_file
     generate_index_for_intent_detection
 from whispering_assistant.utils.embeddings_cache import query_embeddings_cache_db_name, create_embedding_database
 from whispering_assistant.utils.gpt_prompt_injections import faiss_index_file_name_gpt_prompt_templates, \
-    default_csv_prompts_gpt_prompt_templates, generate_index_prompt_for_injection
+    default_csv_prompts_gpt_prompt_templates
 
 # List of files to delete if they exist
 files_to_delete = [query_embeddings_cache_db_name,
@@ -27,6 +27,4 @@ for file in files_to_delete:
 create_embedding_database()
 
 import whispering_assistant.commands
-
 generate_index_for_intent_detection()
-generate_index_prompt_for_injection()
