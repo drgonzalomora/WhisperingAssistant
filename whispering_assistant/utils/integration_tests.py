@@ -3,8 +3,8 @@
 # 🚥🚥🚥
 # 📌 Test difflib threshold
 # from whispering_assistant.commands.gpt_talk_with_clipboard_context import get_best_match
-# best_match = get_best_match(query="nora, create a checklist",
-#                             items=[{'sample_command': ["create a checklist"]}])
+# best_match = get_best_match(query="use the following tool for asking nora generating a summarized progress reports from a given context. example command: create a detailed progress report",
+#                             items=[{'desc': "use the following tool for asking {assistant_name} generating a summarized progress reports from a given context. example command: create a detailed progress report"}])
 # print(best_match)
 
 # 🚥🚥🚥

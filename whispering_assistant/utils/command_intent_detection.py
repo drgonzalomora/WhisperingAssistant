@@ -87,14 +87,25 @@ def get_intent_from_text(command_text):
     print("top_3_results", top_3_results)
 
     top_result_filtered = None
+    top_result_sub_filtered = None
+    top_result_main_filtered = None
 
     for result in top_3_results:
-        if '_main' in result['id_text']:
-            if result['similarity'] > 0.899:
-                top_result_filtered = result
-        elif '_sub' in result['id_text']:
-            if result['similarity'] > 0.92:
-                top_result_filtered = result
+        if result['similarity'] > 0.949:
+            top_result_filtered = result
+            break
+
+        if '_sub' in result['id_text'] and result['similarity'] > 0.91:
+            top_result_sub_filtered = result
+
+        if '_main' in result['id_text'] and result['similarity'] > 0.889:
+            top_result_main_filtered = result
+
+    if not top_result_filtered and top_result_main_filtered:
+        top_result_filtered = top_result_main_filtered
+
+    if not top_result_filtered and top_result_sub_filtered:
+        top_result_filtered = top_result_sub_filtered
 
     print("🎯 top_result_filtered", top_result_filtered)
 
