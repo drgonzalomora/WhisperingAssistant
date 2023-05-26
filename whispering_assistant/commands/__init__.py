@@ -6,8 +6,11 @@ import os
 import importlib
 
 from whispering_assistant.configs.config import load_os_display_env
+from whispering_assistant.utils.clipboard_manager import ClipboardHandler
 from whispering_assistant.utils.command_intent_detection import get_intent_from_text
 from whispering_assistant.utils.commands_plugin_state import COMMAND_PLUGINS
+
+clipboard_handler = ClipboardHandler()
 
 load_os_display_env()
 
@@ -94,12 +97,7 @@ def execute_plugin_by_keyword(text, run_command=True, skip_fallback=False, *args
     plugin_used = None
     text_for_ingestion = text
 
-    # 📌 TODO: Only enable this once we find a way to optimize it so it won't slow down any future command.
-    # Start the transcription on the clipboard so that you can easily access the needed.
-    # old_clipboard = pyclip.paste().lstrip()
-    # pyclip.copy(text_for_ingestion.lstrip())
-    # time.sleep(0.1)
-    # pyclip.copy(old_clipboard)
+    clipboard_handler.handle_clipboard(text_for_ingestion.lstrip())
 
     # 📌 TODO: Update this part of the code and move this to a separate command plugin instead of hard coding it in this general checking function.
     if 'include previous command' in text_for_ingestion.lower().lstrip():
