@@ -45,6 +45,7 @@ class TogglRecordTimeCommand(BaseCommand):
     description = [
         "use the following tool for recording time log. usually starts with the phrases: 'record time' or 'record my time'"
     ]
+    required_keywords = ['record']
     examples = [
         'record my time',
         'record time log'
