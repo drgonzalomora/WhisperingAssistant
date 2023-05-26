@@ -35,6 +35,7 @@ def generate_examples_of_prompt_injections():
     list_md = parse_markdown()
     # print(list_md)
     all_sample_commands = get_all_descriptions(list_md)
+
     # print(all_sample_commands)
 
     def append_names_to_commands(commands, names=None):
@@ -121,8 +122,8 @@ def get_best_match(query, items):
     """
     Helper function to get the best match for a query from a list of items.
     """
-    sample_commands = [command for item in items for command in item['desc']]
-    match = difflib.get_close_matches(query, sample_commands, n=1, cutoff=0.88)
+    sample_commands = [item['desc'] for item in items]
+    match = difflib.get_close_matches(query, sample_commands, n=1, cutoff=0.85)
 
     print("match", match)
 
@@ -130,7 +131,7 @@ def get_best_match(query, items):
     if match:
         match_command = match[0]
         for item in items:
-            if match_command in item['sample_command']:
+            if match_command in item['desc']:
                 return item
     else:
         return None
