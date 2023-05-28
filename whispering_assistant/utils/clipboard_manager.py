@@ -49,6 +49,7 @@ class TypingViaClipBoardHandler:
     def paste_input(self):
         print("Paste input")
         import pyautogui
+        time.sleep(0.2)
         pyautogui.hotkey('ctrl', 'v')
         time.sleep(0.1)
         pyclip.copy(self.old_clipboard)

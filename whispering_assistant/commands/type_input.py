@@ -28,6 +28,7 @@ class GptTypingViaClipBoardHandler(TypingViaClipBoardHandler):
                 pyautogui.click(image2_center)
 
                 # Type the string
+                time.sleep(0.2)
                 pyautogui.hotkey('ctrl', 'v')
                 time.sleep(0.1)
 
@@ -37,12 +38,13 @@ class GptTypingViaClipBoardHandler(TypingViaClipBoardHandler):
             else:
                 print("Image 2 chat box not found on the screen.")
                 # Simulate pressing Ctrl+V
-
+                time.sleep(0.2)
                 pyautogui.hotkey('ctrl', 'v')
         else:
             print("Image 2 chat box not found on the screen.")
             # Simulate pressing Ctrl+V
             import pyautogui
+            time.sleep(0.2)
             pyautogui.hotkey('ctrl', 'v')
 
 
