@@ -3,13 +3,13 @@
 import os
 import threading
 import time
-
 import openai
+from dotenv import load_dotenv
 
-from tts_test import tts_chunk_by_chunk, tts_queue, SENTINEL, audio_queue
+from tts_test import tts_queue, SENTINEL, audio_queue
 
-openai.api_key = "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"
-os.environ["OPENAI_API_KEY"] = "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"
+load_dotenv()
+openai.api_key = os.environ.get("openai_key")
 
 global history_list
 

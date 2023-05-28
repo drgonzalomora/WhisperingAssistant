@@ -22,3 +22,4 @@ __pycache__
 /whispering_assistant/assets/ml/**.ppn
 
 /whispering_assistant/commands/bash_scripts/**.sh
+/.env
