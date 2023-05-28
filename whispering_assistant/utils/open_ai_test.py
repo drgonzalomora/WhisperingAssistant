@@ -8,8 +8,8 @@ import openai
 from dotenv import load_dotenv
 import queue
 import requests
-
-
+import langchain
+from duckduckgo_search import DDGS
 from whispering_assistant.utils.tts_test import tts_queue, SENTINEL, audio_queue
 
 load_dotenv()
@@ -18,23 +18,49 @@ openai.api_key = os.environ.get("openai_key")
 global history_list
 
 # 📌 TODO:
+# - Save History to a file
 # - I need to filter out the history list to make sure that it won't go over the maximum number of tokens.
 # - Clean up the locally created transcriptions so that it don't get large over time.
 # - Add the ability to search the web using the DuckDuckGo plugin.
-# - Connect to whisper
+# - ✅ Connect to whisper
 
+
+role_instruction = """
+You are a helpful assistant. If you don't know the exact answer, USE the SEARCH tool to search current events and the latest information.
+
+---
+
+Use the following format:
+```
+Context: Possible related context from previous discussions.
+Thought: you should always think about what to do.
+Action: the action to take. [SEARCH]
+Action Input: the input to the search tool.
+```
+
+---
+
+Use the following format for the final answer:
+
+```
+Final Answer: the final answer based on the tool or current knowledge
+```
+"""
+
+# history_list = [{"role": "system",
+#                  "content": "You are a laconic assistant. You reply with brief, to-the-point answers with no elaboration. BUT have atleast 5 words of a reply to be more fun"}]
 
 history_list = [{"role": "system",
-                 "content": "You are a laconic assistant. You reply with brief, to-the-point answers with no elaboration. BUT have atleast 5 words of a reply to be more fun"}]
+                 "content": role_instruction}]
 
 
-def askGpt(input_text):
+def askGpt(input_text, role="user"):
     # record the time before the request is sent
     start_time = time.time()
 
     # send a ChatCompletion request to count to 100
 
-    history_list.append({'role': 'user', 'content': input_text})
+    history_list.append({'role': role, 'content': input_text})
 
     response = openai.ChatCompletion.create(
         model='gpt-3.5-turbo',
@@ -54,6 +80,10 @@ def askGpt(input_text):
     def buffer_clear():
         global buffer
         buffer = ""
+
+    # 📌 TODO: Skip if the model is thinking
+
+    # 📌 TODO: Watch out from the stream about the [SEARCH] action
 
     for chunk in response:
         chunk_time = time.time() - start_time  # calculate the time delay of the chunk
@@ -79,6 +109,39 @@ def askGpt(input_text):
         print("🗣️", result_buffer)
         tts_queue.put((result_buffer, buffer_clear))
 
+    print("collected_parsed_messages", collected_parsed_messages)
+
+    collected_parsed_messages_str = "".join(collected_parsed_messages)
+
+    print("collected_parsed_messages", collected_parsed_messages_str)
+
+    if 'Action Input:' in collected_parsed_messages_str:
+        print('🔎 Need to perform a search')
+        # API call
+        match = re.search(r'Action Input: ?"?(.*?)"?$', collected_parsed_messages_str, re.MULTILINE)
+        if match:
+            action_input = match.group(1).strip()  # Use strip() to remove leading/trailing whitespaces
+            print(f'Action Input: {action_input}')
+
+            from duckduckgo_search import DDGS
+            from itertools import islice
+
+            ddgs_text_gen = DDGS().text(action_input, backend="api")
+            first_10_res = islice(ddgs_text_gen, 10)
+            first_10_res_str = " -- ".join(str(res) for res in first_10_res)
+
+            result_str = f"""
+            Result:
+            {first_10_res_str}
+            """
+
+            print(result_str)
+
+            askGpt(result_str, role='assistant')
+        else:
+            print('No match found.')
+        # call askGpt again to append the result of the search
+
     # Wait for the worker threads to finish processing all the items in the queues
     print("1")
     tts_queue.join()
@@ -91,7 +154,7 @@ def askGpt(input_text):
     print("response", response)
     print("collected_messages", collected_parsed_messages)
 
-    history_list.append({'role': 'assistant', 'content': "".join(collected_parsed_messages)})
+    history_list.append({'role': 'assistant', 'content': collected_parsed_messages_str})
 
     print("history_list", history_list)
 
