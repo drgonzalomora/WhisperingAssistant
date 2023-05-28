@@ -5,8 +5,9 @@ import threading
 import time
 import openai
 from dotenv import load_dotenv
+import queue
 
-from tts_test import tts_queue, SENTINEL, audio_queue
+from whispering_assistant.utils.tts_test import tts_queue, SENTINEL, audio_queue
 
 load_dotenv()
 openai.api_key = os.environ.get("openai_key")
@@ -88,26 +89,34 @@ def askGpt(input_text):
     return collected_parsed_messages
 
 
-def process_input(input_string_inner):
-    result = askGpt(input_string_inner)
-    return result
-
-
 global input_thread
 
-# Create a thread to handle user input and start it
-input_string = input("Please enter the string to pass to the function: ")
-input_thread = threading.Thread(target=process_input, args=(input_string,), daemon=True)
+
+def process_input(input_queue_local):
+    while True:
+        input_string = input_queue_local.get()
+
+        # Your processing code here
+        print(f'Processing input: {input_string}')
+
+        if input_string:
+            askGpt(input_string)
+
+        # Indicate that a formerly enqueued task is complete
+        input_queue.task_done()
+        print(f'✅ Task Done: {input_string}')
+
+        # Let's not hog the CPU
+        time.sleep(0.1)
+
+
+# Create a queue to communicate between the threads
+input_queue = queue.Queue()
+
+# Start the thread that processes input
+input_thread = threading.Thread(target=process_input, args=(input_queue,), daemon=True)
+print("starting input thread")
 input_thread.start()
 
-# Main loop
-while True:
-    # If the input thread is not alive (i.e., it has finished processing the last input),
-    # ask the user for a new input and start a new input thread
-    if not input_thread.is_alive():
-        input_string = input("Please enter the string to pass to the function: ")
-        input_thread = threading.Thread(target=process_input, args=(input_string,), daemon=True)
-        input_thread.start()
-
-    # Let's not hog the CPU
-    time.sleep(0.1)
+# Wait for both threads to complete
+# input_thread.join()

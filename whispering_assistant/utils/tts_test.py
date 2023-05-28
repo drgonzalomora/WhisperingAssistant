@@ -133,8 +133,10 @@ def audio_worker():
 
 
 # Start the worker threads
+print("starting tts worker")
 tts_worker_thread = threading.Thread(target=tts_worker, daemon=True)
 tts_worker_thread.start()
 
+print("starting audio worker")
 audio_worker_thread = threading.Thread(target=audio_worker, daemon=True)
 audio_worker_thread.start()
