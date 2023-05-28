@@ -1,5 +1,22 @@
 # ⚠️ use this to do some testing for plugin execution based on the transcript created.
 
+
+# v 🚥🚥🚥
+# import re
+#
+# multiline_string = """
+# 🗣️ Action: SEARCH
+#
+# Action Input: "Philippines current weather"
+# """
+#
+# match = re.search(r'Action Input: ?"?(.*?)"?$', multiline_string, re.MULTILINE)
+# if match:
+#     action_input = match.group(1).strip()  # Use strip() to remove leading/trailing whitespaces
+#     print(f'Action Input: {action_input}')
+# else:
+#     print('No match found.')
+
 # 🚥🚥🚥
 # 📌 Test difflib threshold
 # from whispering_assistant.commands.gpt_talk_with_clipboard_context import get_best_match
