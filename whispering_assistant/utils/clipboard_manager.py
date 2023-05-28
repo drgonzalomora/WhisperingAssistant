@@ -60,3 +60,6 @@ class TypingViaClipBoardHandler:
 
         clipboard_thread = threading.Thread(target=copy_paste_restore)
         clipboard_thread.start()
+
+
+typingViaClipBoardHandler = TypingViaClipBoardHandler()

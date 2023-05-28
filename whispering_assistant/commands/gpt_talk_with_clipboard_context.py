@@ -1,6 +1,7 @@
 import time
 import pyclip
 from whispering_assistant.commands.command_base_template import BaseCommand, command_types
+from whispering_assistant.utils.clipboard_manager import typingViaClipBoardHandler
 from whispering_assistant.utils.gpt_prompt_injections import parse_markdown
 import difflib
 
@@ -68,11 +69,11 @@ def send_question_to_gpt(query, new_conversation=False, gpt_type='GPT3', check_g
 
     if new_conversation_2:
         pyautogui.hotkey('ctrl', 't')
-        time.sleep(0.5)
-        pyautogui.typewrite(chatgpt_link)
-        time.sleep(0.1)
+        time.sleep(0.3)
+        typingViaClipBoardHandler.run_thread(chatgpt_link)
+        time.sleep(0.3)
         pyautogui.press('enter')
-        time.sleep(2)
+        time.sleep(1)
 
     # Check if image1_chat_logo exists on the screen
     image1_location = pyautogui.locateOnScreen(image1_chat_logo, region=region1, confidence=0.8)
