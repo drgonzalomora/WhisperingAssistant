@@ -67,9 +67,15 @@ def play_audio(queue):
         playsound(output_file)
 
 
+def contains_only_special_characters(string):
+    pattern = r"^[^\w\s]*$"  # \w matches any word character (equal to [a-zA-Z0-9_]), \s matches any whitespace character (spaces, tabs, line breaks)
+    match = re.match(pattern, string)
+    return match is not None
+
+
 def tts_chunk_by_chunk(input_text, callback=None, prefix=""):
     # Split the input text into chunks at stop characters
-    chunks = re.split(r'(?<=\n)|(?<=[^.,!?\n\s][.,!?])', input_text)
+    chunks = re.split(r'(?<=\n)|(?<=[^.,!?)(\n\s][.,!?)(])', input_text)
 
     # Process each chunk
     for i, chunk in enumerate(chunks):
@@ -78,7 +84,7 @@ def tts_chunk_by_chunk(input_text, callback=None, prefix=""):
 
         print("chunk_ingest", chunk_ingest)
 
-        if chunk_ingest:
+        if chunk_ingest and not contains_only_special_characters(chunk_ingest):
             # Get the model input for this chunk
             sample = TTSHubInterface.get_model_input(task, chunk_ingest)
 
