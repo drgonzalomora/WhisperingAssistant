@@ -4,6 +4,12 @@ from fairseq.models.text_to_speech.hub_interface import TTSHubInterface
 import soundfile as sf
 from playsound import playsound
 import time
+import threading
+from queue import Queue
+
+import nltk
+from playsound import playsound
+import time
 
 models, cfg, task = load_model_ensemble_and_task_from_hf_hub(
     "facebook/fastspeech2-en-ljspeech",
@@ -14,47 +20,121 @@ model = models[0]
 TTSHubInterface.update_cfg_with_data_cfg(cfg, task.data_cfg)
 generator = task.build_generator([model], cfg)
 
+# Define a special sentinel value
+SENTINEL = 'STOP'
 
-def tts_simple(input_text):
-    # sample: As an AI language model, I don't have feelings, but I'm functioning properly and ready to assist you with any questions or tasks you may have. How can I help you today?
 
-    sample = TTSHubInterface.get_model_input(task, input_text)
+# Define a function to split text into chunks of a certain number of words
+def split_into_chunks(text, max_words):
+    words = text.split()
+    for i in range(0, len(words), max_words):
+        yield ' '.join(words[i:i + max_words])
 
+
+# Define a function to generate speech
+def generate_speech(i, chunk, queue):
+    # Get the model input for this chunk
+    sample = TTSHubInterface.get_model_input(task, chunk)
+
+    # Generate the speech audio for this chunk
     start_time = time.time()
     wav, rate = TTSHubInterface.get_prediction(task, model, generator, sample)
     end_time = time.time()
-    print(f'Text-to-speech generation took {end_time - start_time} seconds')
 
-    print('wav', wav)
+    print(f'✅ Text-to-speech generation for chunk {i + 1} took {end_time - start_time} seconds')
 
-    # Save the output wav file
-    output_file = 'tts_output.wav'
+    # Save the output wav file for this chunk
+    output_file = f'tts_output_{i + 1}.wav'
     sf.write(output_file, wav, rate)
 
-    # Play the output file
-    playsound(output_file)
+    # Put the filename into the queue
+    queue.put(output_file)
 
 
-def tts_phrase_by_phrase(input_text):
-    # Split the input text into sentences
-    sentences = nltk.tokenize.sent_tokenize(input_text)
+# Define a function to play audio
+def play_audio(queue):
+    while True:
+        # Wait for a filename to be added to the queue
+        output_file = queue.get()
 
-    for i, sentence in enumerate(sentences):
-        print(f'Processing sentence {i + 1} of {len(sentences)}')
+        # Break the loop if the sentinel value is seen
+        if output_file == SENTINEL:
+            break
 
-        # Get the model input for this sentence
-        sample = TTSHubInterface.get_model_input(task, sentence)
+        # Play the audio file
+        playsound(output_file)
 
-        # Generate the speech audio for this sentence
+
+def tts_chunk_by_chunk(input_text, max_words=10, callback=None, prefix=""):
+    # Split the input text into chunks of up to max_words words
+    chunks = list(split_into_chunks(input_text, max_words))
+
+    # Process each chunk
+    for i, chunk in enumerate(chunks):
+        print(f'Processing chunk {i + 1} of {len(chunks)}')
+
+        # Get the model input for this chunk
+        sample = TTSHubInterface.get_model_input(task, chunk)
+
+        # Generate the speech audio for this chunk
         start_time = time.time()
         wav, rate = TTSHubInterface.get_prediction(task, model, generator, sample)
         end_time = time.time()
 
-        print(f'Text-to-speech generation for sentence {i + 1} took {end_time - start_time} seconds')
+        print(f'Text-to-speech generation for chunk {i + 1} took {end_time - start_time} seconds')
 
-        # Save the output wav file for this sentence
-        output_file = f'tts_output_{i + 1}.wav'
+        # Save the output wav file for this chunk
+        output_file = f'tts_output_{prefix}_{i + 1}.wav'
         sf.write(output_file, wav, rate)
 
-        # Play the output file for this sentence
-        playsound(output_file)
+        # Add the filename to the audio queue
+        audio_queue.put(output_file)
+
+    # Call the callback function if it was provided
+    if callback is not None:
+        callback()
+
+
+# 🚥🚥🚥
+
+# Create two queues: one for text-to-speech conversion and another for playing audio files
+tts_queue = Queue()
+audio_queue = Queue()
+
+
+def tts_worker():
+    while True:
+        # Wait for a chunk of text to be added to the queue
+        text, callback = tts_queue.get()
+        prefix = str(time.time())
+        print('🎯 text for TTS', text)
+
+        # Process the text
+        tts_chunk_by_chunk(text, callback=callback, prefix=prefix)
+
+        # Mark the task as done
+        tts_queue.task_done()
+
+
+def audio_worker():
+    while True:
+        # Wait for a filename to be added to the queue
+        output_file = audio_queue.get()
+
+        print("output_file", output_file, output_file == SENTINEL)
+
+        # Break the loop if the sentinel value is seen
+        if output_file != SENTINEL:
+            # Play the audio file
+            playsound(output_file)
+
+        # Mark the task as done
+        audio_queue.task_done()
+
+
+# Start the worker threads
+tts_worker_thread = threading.Thread(target=tts_worker, daemon=True)
+tts_worker_thread.start()
+
+audio_worker_thread = threading.Thread(target=audio_worker, daemon=True)
+audio_worker_thread.start()
