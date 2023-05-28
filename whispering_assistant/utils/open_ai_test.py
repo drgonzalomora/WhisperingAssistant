@@ -1,11 +1,14 @@
 # Example of an OpenAI ChatCompletion request with stream=True
 # https://platform.openai.com/docs/guides/chat
 import os
+import re
 import threading
 import time
 import openai
 from dotenv import load_dotenv
 import queue
+import requests
+
 
 from whispering_assistant.utils.tts_test import tts_queue, SENTINEL, audio_queue
 
@@ -46,29 +49,35 @@ def askGpt(input_text):
     collected_parsed_messages = []
     # iterate through the stream of events
 
-    buffer = []
+    buffer = ""
+
+    def buffer_clear():
+        global buffer
+        buffer = ""
+
     for chunk in response:
         chunk_time = time.time() - start_time  # calculate the time delay of the chunk
         collected_chunks.append(chunk)  # save the event response
         chunk_message = chunk['choices'][0]['delta']  # extract the message
         collected_messages.append(chunk_message)  # save the message
+
         if 'content' in chunk_message:
             collected_parsed_messages.append(chunk_message['content'])
-            buffer.append(chunk_message['content'])
+            buffer += chunk_message['content']
 
-        if len(buffer) >= 20:  # Once there are 3 or more items, print them
-            result_buffer = "".join(buffer)
-            print("🗣️", result_buffer)  # print all messages in the buffer
-            # Add the buffer to the TTS queue
-            tts_queue.put((result_buffer, buffer.clear))
-            buffer = []  # reset the buffer
+            # Check if the buffer ends with a stop character.
+            if re.search(r'[.,!?]\s*$', buffer):
+                print("🗣️", buffer)  # print all messages in the buffer
+                # Add the buffer to the TTS queue
+                tts_queue.put((buffer, buffer_clear))
+                buffer = ""  # reset the buffer
 
     # Check for any remaining items in the buffer after the loop
     if buffer:
         result_buffer = "".join(buffer)
         # Add the buffer to the TTS queue
         print("🗣️", result_buffer)
-        tts_queue.put((result_buffer, buffer.clear))
+        tts_queue.put((result_buffer, buffer_clear))
 
     # Wait for the worker threads to finish processing all the items in the queues
     print("1")
@@ -94,12 +103,16 @@ global input_thread
 
 def process_input(input_queue_local):
     while True:
+        end_conversation = False
         input_string = input_queue_local.get()
 
         # Your processing code here
         print(f'Processing input: {input_string}')
 
-        if input_string:
+        if 'end' in input_string and 'conversation' in input_string:
+            end_conversation = True
+
+        if input_string and not end_conversation:
             askGpt(input_string)
 
         # Indicate that a formerly enqueued task is complete
@@ -108,6 +121,10 @@ def process_input(input_queue_local):
 
         # Let's not hog the CPU
         time.sleep(0.1)
+
+        # 📌 TODO: Continue the conversation until otherwise ended
+        if not end_conversation:
+            requests.get("http://127.0.0.1:6969")
 
 
 # Create a queue to communicate between the threads

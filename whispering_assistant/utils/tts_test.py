@@ -1,3 +1,5 @@
+import re
+
 import nltk
 from fairseq.checkpoint_utils import load_model_ensemble_and_task_from_hf_hub
 from fairseq.models.text_to_speech.hub_interface import TTSHubInterface
@@ -65,30 +67,34 @@ def play_audio(queue):
         playsound(output_file)
 
 
-def tts_chunk_by_chunk(input_text, max_words=10, callback=None, prefix=""):
-    # Split the input text into chunks of up to max_words words
-    chunks = list(split_into_chunks(input_text, max_words))
+def tts_chunk_by_chunk(input_text, callback=None, prefix=""):
+    # Split the input text into chunks at stop characters
+    chunks = re.split(r'(?<=\n)|(?<=[^.,!?\n\s][.,!?])', input_text)
 
     # Process each chunk
     for i, chunk in enumerate(chunks):
+        chunk_ingest = chunk.lstrip()
         print(f'Processing chunk {i + 1} of {len(chunks)}')
 
-        # Get the model input for this chunk
-        sample = TTSHubInterface.get_model_input(task, chunk)
+        print("chunk_ingest", chunk_ingest)
 
-        # Generate the speech audio for this chunk
-        start_time = time.time()
-        wav, rate = TTSHubInterface.get_prediction(task, model, generator, sample)
-        end_time = time.time()
+        if chunk_ingest:
+            # Get the model input for this chunk
+            sample = TTSHubInterface.get_model_input(task, chunk_ingest)
 
-        print(f'Text-to-speech generation for chunk {i + 1} took {end_time - start_time} seconds')
+            # Generate the speech audio for this chunk
+            start_time = time.time()
+            wav, rate = TTSHubInterface.get_prediction(task, model, generator, sample)
+            end_time = time.time()
 
-        # Save the output wav file for this chunk
-        output_file = f'tts_output_{prefix}_{i + 1}.wav'
-        sf.write(output_file, wav, rate)
+            print(f'Text-to-speech generation for chunk {i + 1} took {end_time - start_time} seconds')
 
-        # Add the filename to the audio queue
-        audio_queue.put(output_file)
+            # Save the output wav file for this chunk
+            output_file = f'tts_output_{prefix}_{i + 1}.wav'
+            sf.write(output_file, wav, rate)
+
+            # Add the filename to the audio queue
+            audio_queue.put(output_file)
 
     # Call the callback function if it was provided
     if callback is not None:
@@ -115,6 +121,9 @@ def tts_worker():
         # Mark the task as done
         tts_queue.task_done()
 
+        # Let's not hog the CPU
+        time.sleep(0.1)
+
 
 def audio_worker():
     while True:
@@ -130,6 +139,9 @@ def audio_worker():
 
         # Mark the task as done
         audio_queue.task_done()
+
+        # Let's not hog the CPU
+        time.sleep(0.1)
 
 
 # Start the worker threads
