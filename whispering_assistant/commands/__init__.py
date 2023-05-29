@@ -6,9 +6,11 @@ import os
 import importlib
 
 from whispering_assistant.configs.config import load_os_display_env
+from whispering_assistant.states_manager import global_var_state
 from whispering_assistant.utils.clipboard_manager import ClipboardHandler
 from whispering_assistant.utils.command_intent_detection import get_intent_from_text
 from whispering_assistant.utils.commands_plugin_state import COMMAND_PLUGINS
+from whispering_assistant.utils.open_ai_test import input_queue
 
 clipboard_handler = ClipboardHandler()
 
@@ -99,53 +101,55 @@ def execute_plugin_by_keyword(text, run_command=True, skip_fallback=False, *args
 
     clipboard_handler.handle_clipboard(text_for_ingestion.lstrip())
 
-    # 📌 TODO: Update this part of the code and move this to a separate command plugin instead of hard coding it in this general checking function.
-    if 'include previous command' in text_for_ingestion.lower().lstrip():
-        text_for_ingestion = text_for_ingestion.lower().replace('previous command', prev_text_parameter)
+    if global_var_state.continuous_conversation_mode:
+        if run_command and not skip_fallback:
+            input_queue.put(text)
 
-    result_text_lower = text_for_ingestion.lower().lstrip()
-    words_array = [word.strip() for word in re.split(r'[^\w\s]+|(?<=\s)', result_text_lower) if word.strip()]
-    words_cleaned = ' '.join(words_array)
+    else:
+        result_text_lower = text_for_ingestion.lower().lstrip()
+        words_array = [word.strip() for word in re.split(r'[^\w\s]+|(?<=\s)', result_text_lower) if word.strip()]
+        words_cleaned = ' '.join(words_array)
 
-    detected_intent, detected_intent_details = get_intent_from_text(result_text_lower)
+        detected_intent, detected_intent_details = get_intent_from_text(result_text_lower)
 
-    print("detected_intent", detected_intent)
-    print("detected_intent_details", detected_intent_details)
+        print("detected_intent", detected_intent)
+        print("detected_intent_details", detected_intent_details)
 
-    for plugin in COMMAND_PLUGINS.values():
-        if plugin.trigger.lower() != FALL_BACK_COMMAND:
+        for plugin in COMMAND_PLUGINS.values():
+            if plugin.trigger.lower() != FALL_BACK_COMMAND:
 
-            if detected_intent and detected_intent.lower() == plugin.trigger.lower():
-                print("found plugin using intent", detected_intent)
-                match, text_parameter = check_strings(words_cleaned, plugin.keywords, raw_text=result_text_lower)
-                print("text_parameter", text_parameter)
-                print("result_text_lower", result_text_lower)
+                if detected_intent and detected_intent.lower() == plugin.trigger.lower():
+                    print("found plugin using intent", detected_intent)
+                    match, text_parameter = check_strings(words_cleaned, plugin.keywords, raw_text=result_text_lower)
+                    print("text_parameter", text_parameter)
+                    print("result_text_lower", result_text_lower)
 
-                if hasattr(plugin, 'required_keywords'):
-                    # Check that any required keywords are in the text
-                    if not any(required_keyword in result_text_lower for required_keyword in plugin.required_keywords):
-                        print('missing required keywords for plugin', plugin.trigger.lower())
-                        continue
+                    if hasattr(plugin, 'required_keywords'):
+                        # Check that any required keywords are in the text
+                        if not any(
+                                required_keyword in result_text_lower for required_keyword in plugin.required_keywords):
+                            print('missing required keywords for plugin', plugin.trigger.lower())
+                            continue
 
-                plugin_used = plugin
+                    plugin_used = plugin
 
-                if run_command:
-                    print('running plugin', plugin.trigger.lower())
-                    prev_text_parameter = text_parameter
-                    plugin.run(*args, text_parameter=text_parameter, raw_text=text_for_ingestion,
-                               command_intent=detected_intent_details, **kwargs)
+                    if run_command:
+                        print('running plugin', plugin.trigger.lower())
+                        prev_text_parameter = text_parameter
+                        plugin.run(*args, text_parameter=text_parameter, raw_text=text_for_ingestion,
+                                   command_intent=detected_intent_details, **kwargs)
 
-                found = True
-                break
+                    found = True
+                    break
 
-    if not found:
-        print(f"No plugin found for text: {text_for_ingestion}")
-        fallback_plugin = COMMAND_PLUGINS.get(FALL_BACK_COMMAND.lower())
-        if not skip_fallback and fallback_plugin:
-            prev_text_parameter = text_for_ingestion
-            fallback_plugin.run(*args, text_parameter=text_for_ingestion, raw_text=text_for_ingestion, **kwargs)
-        else:
-            print("No fallback plugin found.")
+        if not found:
+            print(f"No plugin found for text: {text_for_ingestion}")
+            fallback_plugin = COMMAND_PLUGINS.get(FALL_BACK_COMMAND.lower())
+            if not skip_fallback and fallback_plugin:
+                prev_text_parameter = text_for_ingestion
+                fallback_plugin.run(*args, text_parameter=text_for_ingestion, raw_text=text_for_ingestion, **kwargs)
+            else:
+                print("No fallback plugin found.")
 
     return plugin_used
 
