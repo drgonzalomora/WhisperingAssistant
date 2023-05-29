@@ -8,9 +8,12 @@ import openai
 from dotenv import load_dotenv
 import queue
 import requests
-import langchain
 from duckduckgo_search import DDGS
+
+from whispering_assistant.states_manager import global_var_state
 from whispering_assistant.utils.tts_test import tts_queue, SENTINEL, audio_queue
+import json
+from datetime import datetime
 
 load_dotenv()
 openai.api_key = os.environ.get("openai_key")
@@ -18,54 +21,89 @@ openai.api_key = os.environ.get("openai_key")
 global history_list
 
 # 📌 TODO:
-# - Save History to a file
+# - Save History to a file on every response
 # - I need to filter out the history list to make sure that it won't go over the maximum number of tokens.
 # - Clean up the locally created transcriptions so that it don't get large over time.
-# - Add the ability to search the web using the DuckDuckGo plugin.
-# - ✅ Connect to whisper
 
-
+# This is too strict not saving anything
+# https://github.com/hwchase17/langchain/blob/99a1e3f3a309852da989af080ba47288dcb9a348/langchain/agents/conversational/prompt.py#L35
+# Currently the best system role prompt based on my tests
 role_instruction = """
-You are a helpful assistant. If you don't know the exact answer, USE the SEARCH tool to search current events and the latest information.
+Assistant is a large language model trained by OpenAI.
+Assistant is designed to be able to assist with a wide range of tasks, from answering simple questions to providing in-depth explanations and discussions on a wide range of topics. As a language model, Assistant is able to generate human-like text based on the input it receives, allowing it to engage in natural-sounding conversations and provide responses that are coherent and relevant to the topic at hand.
+Assistant is constantly learning and improving, and its capabilities are constantly evolving. It is able to process and understand large amounts of text, and can use this knowledge to provide accurate and informative responses to a wide range of questions. Additionally, Assistant is able to generate its own text based on the input it receives, allowing it to engage in discussions and provide explanations and descriptions on a wide range of topics.
+Overall, Assistant is a powerful tool that can help with a wide range of tasks and provide valuable insights and information on a wide range of topics. Whether you need help with a specific question or just want to have a conversation about a particular topic, Assistant is here to assist.
 
 ---
 
-Use the following format:
+TOOLS:
+- SEARCH: use this to search for current events or latest news from the internet
+
+---
+
+To use a tool, please use the following format:
+
 ```
-Context: Possible related context from previous discussions.
-Thought: you should always think about what to do.
-Action: the action to take. [SEARCH]
-Action Input: the input to the search tool.
+Thought: Do I need to use a tool? Yes
+Action: the action to take, should be one of the tools: [SEARCH]
+Action Input: the input to the action
+Observation: the result of the action
 ```
 
 ---
 
-Use the following format for the final answer:
+When you have a response to say to the Human, or if you do not need to use a tool, you MUST use the format:
 
 ```
-Final Answer: the final answer based on the tool or current knowledge
+Thought: Do I need to use a tool? No
+Final Answer: [your response here, you make sure to reply with brief, to-the-point answers with no elaboration]
 ```
 """
 
-# history_list = [{"role": "system",
-#                  "content": "You are a laconic assistant. You reply with brief, to-the-point answers with no elaboration. BUT have atleast 5 words of a reply to be more fun"}]
-
 history_list = [{"role": "system",
-                 "content": role_instruction}]
+                 "content": role_instruction}, {"role": "user",
+                                                "content": "Begin!"}]
+
+
+def clear_history_list():
+    global history_list
+    history_list = [{"role": "system",
+                     "content": role_instruction}, {"role": "user",
+                                                    "content": "Begin!"}]
+
+
+def get_filename():
+    # Get the current time
+    now = datetime.now()
+
+    # Use floor division to get the minute part to change every two minutes
+    minute = now.minute // 2 * 2
+
+    # Create the formatted datetime string without seconds
+    formatted_date_time = now.strftime(f"%Y_%m_%d-%H_{minute:02d}")
+
+    # Create filename
+    return f'history_list_{formatted_date_time}.json'
 
 
 def askGpt(input_text, role="user"):
     # record the time before the request is sent
     start_time = time.time()
 
+    if 'user' in role:
+        input_text_edited = "Answer as best you can. Question: " + input_text
+    else:
+        input_text_edited = input_text
+
     # send a ChatCompletion request to count to 100
 
-    history_list.append({'role': role, 'content': input_text})
+    history_list.append({'role': role, 'content': input_text_edited})
 
     response = openai.ChatCompletion.create(
         model='gpt-3.5-turbo',
         messages=history_list,
         temperature=0,
+        stop=['Observation:', 'Result:'],
         stream=True  # again, we set stream=True
     )
 
@@ -115,6 +153,13 @@ def askGpt(input_text, role="user"):
 
     print("collected_parsed_messages", collected_parsed_messages_str)
 
+    history_list.append({'role': 'assistant', 'content': collected_parsed_messages_str})
+
+    filename = get_filename()
+    # Save history_list in json format
+    with open(filename, 'w') as f:
+        json.dump(history_list, f, indent=4)
+
     if 'Action Input:' in collected_parsed_messages_str:
         print('🔎 Need to perform a search')
         # API call
@@ -122,17 +167,12 @@ def askGpt(input_text, role="user"):
         if match:
             action_input = match.group(1).strip()  # Use strip() to remove leading/trailing whitespaces
             print(f'Action Input: {action_input}')
-
-            from duckduckgo_search import DDGS
-            from itertools import islice
-
             ddgs_text_gen = DDGS().text(action_input, backend="api")
-            first_10_res = islice(ddgs_text_gen, 10)
-            first_10_res_str = " -- ".join(str(res) for res in first_10_res)
+            snippets = [result["body"] for result in ddgs_text_gen]
+            first_10_res_str = " -- ".join(snippets)[:1024]
 
             result_str = f"""
-            Result:
-            {first_10_res_str}
+            Observation: {first_10_res_str}
             """
 
             print(result_str)
@@ -154,8 +194,6 @@ def askGpt(input_text, role="user"):
     print("response", response)
     print("collected_messages", collected_parsed_messages)
 
-    history_list.append({'role': 'assistant', 'content': collected_parsed_messages_str})
-
     print("history_list", history_list)
 
     return collected_parsed_messages
@@ -164,15 +202,23 @@ def askGpt(input_text, role="user"):
 global input_thread
 
 
+def should_end_conversation(input_string_lower):
+    print("should_end_conversation", input_string_lower)
+
+    end_word_patterns = [r'\bend\b', r'\bconversation\b', r'\bthanks\b', r'\bbye\b']
+    return any(re.search(pattern, input_string_lower, re.IGNORECASE) for pattern in end_word_patterns)
+
+
 def process_input(input_queue_local):
     while True:
         end_conversation = False
         input_string = input_queue_local.get()
+        input_string_lower = input_string.lower()
 
         # Your processing code here
         print(f'Processing input: {input_string}')
 
-        if 'end' in input_string and 'conversation' in input_string:
+        if should_end_conversation(input_string_lower):
             end_conversation = True
 
         if input_string and not end_conversation:
@@ -182,12 +228,15 @@ def process_input(input_queue_local):
         input_queue.task_done()
         print(f'✅ Task Done: {input_string}')
 
-        # Let's not hog the CPU
-        time.sleep(0.1)
-
-        # 📌 TODO: Continue the conversation until otherwise ended
         if not end_conversation:
             requests.get("http://127.0.0.1:6969")
+
+        if end_conversation:
+            clear_history_list()
+            global_var_state.continuous_conversation_mode = False
+
+        # Let's not hog the CPU
+        time.sleep(0.1)
 
 
 # Create a queue to communicate between the threads
