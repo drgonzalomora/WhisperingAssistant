@@ -2,6 +2,16 @@
 
 
 # v 🚥🚥🚥
+# from whispering_assistant.utils.tts_test import tts_queue
+#
+#
+# def emptypass():
+#     pass
+#
+#
+# tts_queue.put(("A quick brown fox jump over the lazy dog.", emptypass))
+
+# v 🚥🚥🚥
 # import re
 #
 # multiline_string = """
