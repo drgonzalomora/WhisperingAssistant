@@ -1,21 +1,21 @@
 import re
-
-import nltk
 from fairseq.checkpoint_utils import load_model_ensemble_and_task_from_hf_hub
 from fairseq.models.text_to_speech.hub_interface import TTSHubInterface
 import soundfile as sf
-from playsound import playsound
-import time
 import threading
 from queue import Queue
-
-import nltk
 from playsound import playsound
 import time
 
+# Alternatives
+# speecht5 did not mention anything about inference so its better to just try it ourselves
+# https://huggingface.co/blog/speecht5
+# https://huggingface.co/spaces/SurendraKumarDhaka/Text-to-speech-converter
+# https://huggingface.co/speechbrain/tts-tacotron2-ljspeech?text=A+quick+brown+fox+jumped+over+the+lazy+dog
+# facebook/fastspeech2-en-200_speaker-cv4
 models, cfg, task = load_model_ensemble_and_task_from_hf_hub(
-    "facebook/fastspeech2-en-ljspeech",
-    arg_overrides={"vocoder": "none", "fp16": False, "cpu": True}
+    "facebook/fastspeech2-en-200_speaker-cv4",
+    arg_overrides={"vocoder": "hifigan", "fp16": False, "cpu": True}
 )
 
 model = models[0]
