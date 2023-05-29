@@ -23,3 +23,5 @@ __pycache__
 
 /whispering_assistant/commands/bash_scripts/**.sh
 /.env
+/whispering_assistant/configs/**.json
+/whispering_assistant/configs/**.wav
