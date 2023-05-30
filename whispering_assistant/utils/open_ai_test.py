@@ -86,7 +86,17 @@ def get_filename():
     return f'history_list_{formatted_date_time}.json'
 
 
+observation_sent = False
+open_ai_req_counter = 0
+
+# 📌 Remove Extra spaces on the inputs
+# Only add observation not results
+# Make sure that the response from Final answer completion does not contain the stop word
+# Check Top P if same on open ai playground
+# See history_list_2023_05_30-16_32.json
+
 def askGpt(input_text, role="user"):
+    global observation_sent, open_ai_req_counter
     # record the time before the request is sent
     start_time = time.time()
 
@@ -103,9 +113,11 @@ def askGpt(input_text, role="user"):
         model='gpt-3.5-turbo',
         messages=history_list,
         temperature=0,
-        stop=['Observation:', 'Result:'],
+        stop=['Observation:'],
         stream=True  # again, we set stream=True
     )
+    open_ai_req_counter = open_ai_req_counter + 1
+    print("✅ open_ai_req_counter", open_ai_req_counter)
 
     # create variables to collect the stream of chunks
     collected_chunks = []
@@ -160,7 +172,7 @@ def askGpt(input_text, role="user"):
     with open(filename, 'w') as f:
         json.dump(history_list, f, indent=4)
 
-    if 'Action Input:' in collected_parsed_messages_str:
+    if 'Action Input:' in collected_parsed_messages_str and not observation_sent:
         print('🔎 Need to perform a search')
         # API call
         match = re.search(r'Action Input: ?"?(.*?)"?$', collected_parsed_messages_str, re.MULTILINE)
@@ -172,15 +184,18 @@ def askGpt(input_text, role="user"):
             first_10_res_str = " -- ".join(snippets)[:1024]
 
             result_str = f"""
-            Observation: {first_10_res_str}
+            Result: 
+            {first_10_res_str}
+            Thought: I need to use the my observation to answer the question
             """
 
-            print(result_str)
+            print(result_str.lstrip())
 
-            askGpt(result_str, role='assistant')
+            time.sleep(0.1)
+            askGpt(result_str.lstrip(), role='assistant')
+            observation_sent = True
         else:
             print('No match found.')
-        # call askGpt again to append the result of the search
 
     # Wait for the worker threads to finish processing all the items in the queues
     print("1")
@@ -196,6 +211,7 @@ def askGpt(input_text, role="user"):
 
     print("history_list", history_list)
 
+    observation_sent = False
     return collected_parsed_messages
 
 
@@ -228,8 +244,8 @@ def process_input(input_queue_local):
         input_queue.task_done()
         print(f'✅ Task Done: {input_string}')
 
-        if not end_conversation:
-            requests.get("http://127.0.0.1:6969")
+        # if not end_conversation:
+        #     requests.get("http://127.0.0.1:6969")
 
         if end_conversation:
             clear_history_list()

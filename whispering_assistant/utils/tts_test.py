@@ -14,7 +14,7 @@ import time
 # https://huggingface.co/speechbrain/tts-tacotron2-ljspeech?text=A+quick+brown+fox+jumped+over+the+lazy+dog
 # facebook/fastspeech2-en-200_speaker-cv4
 models, cfg, task = load_model_ensemble_and_task_from_hf_hub(
-    "facebook/fastspeech2-en-200_speaker-cv4",
+    "facebook/fastspeech2-en-ljspeech",
     arg_overrides={"vocoder": "hifigan", "fp16": False, "cpu": True}
 )
 
@@ -75,7 +75,7 @@ def contains_only_special_characters(string):
 
 def tts_chunk_by_chunk(input_text, callback=None, prefix=""):
     # Split the input text into chunks at stop characters
-    chunks = re.split(r'(?<=\n)|(?<=[^.,!?)(\n\s][.,!?)(])', input_text)
+    chunks = re.split(r'(?<=\n)|(?<=[^.,!?\n\s][.,!?]\s)', input_text)
 
     # Process each chunk
     for i, chunk in enumerate(chunks):
