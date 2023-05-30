@@ -71,7 +71,7 @@ def send_question_to_gpt(query, new_conversation=False, gpt_type='GPT3', check_g
         pyautogui.hotkey('ctrl', 't')
         time.sleep(0.3)
         typingViaClipBoardHandler.run_thread(chatgpt_link)
-        time.sleep(0.3)
+        time.sleep(0.45)
         pyautogui.press('enter')
         time.sleep(1)
 
