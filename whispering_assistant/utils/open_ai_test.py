@@ -43,21 +43,17 @@ TOOLS:
 
 To use a tool, please use the following format:
 
-```
 Thought: Do I need to use a tool? Yes
 Action: the action to take, should be one of the tools: [SEARCH]
 Action Input: the input to the action
 Observation: the result of the action
-```
 
 ---
 
-When you have a response to say to the Human, or if you do not need to use a tool, you MUST use the format:
+When you have an observation, or you have a response to say to the Human, or if you do not need to use a tool, you MUST use the format:
 
-```
 Thought: Do I need to use a tool? No
 Final Answer: [your response here, you make sure to reply with brief, to-the-point answers with no elaboration]
-```
 """
 
 history_list = [{"role": "system",
@@ -65,11 +61,40 @@ history_list = [{"role": "system",
                                                 "content": "Begin!"}]
 
 
+# This also removes the \n from the history. The problem for that is readability of the promopt
+def clean_text(text):
+    # Regular expression pattern to match any characters that are not alphanumeric and also not in the approved list of special characters
+    pattern = re.compile(r'[^a-zA-Z0-9 _\-:,.|]')
+    # Substitute matching characters with an empty string
+    cleaned_text = pattern.sub('', text)
+    return cleaned_text
+
+
+def encode_decode_text(text, encoding='utf-8'):
+    # Encodes and decodes the text using the provided encoding (default is UTF-8)
+    try:
+        text = text.encode(encoding, 'ignore').decode(encoding)
+    except UnicodeDecodeError:
+        print("The text could not be encoded/decoded as {}.".format(encoding))
+        return None
+    return text
+
+
 def clear_history_list():
     global history_list
     history_list = [{"role": "system",
                      "content": role_instruction}, {"role": "user",
                                                     "content": "Begin!"}]
+
+
+def append_and_remove_spaces_history_list(item):
+    global history_list
+    history_list.append(item)
+
+    for message in history_list:
+        cleaned_text = encode_decode_text(message['content'].strip())
+        cleaned_text = clean_text(cleaned_text)
+        message['content'] = cleaned_text
 
 
 def get_filename():
@@ -89,11 +114,13 @@ def get_filename():
 observation_sent = False
 open_ai_req_counter = 0
 
+
 # 📌 Remove Extra spaces on the inputs
 # Only add observation not results
 # Make sure that the response from Final answer completion does not contain the stop word
 # Check Top P if same on open ai playground
 # See history_list_2023_05_30-16_32.json
+# Only Cut by words, don't cut mid way.
 
 def askGpt(input_text, role="user"):
     global observation_sent, open_ai_req_counter
@@ -107,7 +134,10 @@ def askGpt(input_text, role="user"):
 
     # send a ChatCompletion request to count to 100
 
-    history_list.append({'role': role, 'content': input_text_edited})
+    append_and_remove_spaces_history_list({'role': role, 'content': input_text_edited})
+
+    open_ai_req_counter = open_ai_req_counter + 1
+    print("✅ open_ai_req_counter", open_ai_req_counter)
 
     response = openai.ChatCompletion.create(
         model='gpt-3.5-turbo',
@@ -116,8 +146,6 @@ def askGpt(input_text, role="user"):
         stop=['Observation:'],
         stream=True  # again, we set stream=True
     )
-    open_ai_req_counter = open_ai_req_counter + 1
-    print("✅ open_ai_req_counter", open_ai_req_counter)
 
     # create variables to collect the stream of chunks
     collected_chunks = []
@@ -136,6 +164,7 @@ def askGpt(input_text, role="user"):
     # 📌 TODO: Watch out from the stream about the [SEARCH] action
 
     for chunk in response:
+        print('⏭️chunk', chunk)
         chunk_time = time.time() - start_time  # calculate the time delay of the chunk
         collected_chunks.append(chunk)  # save the event response
         chunk_message = chunk['choices'][0]['delta']  # extract the message
@@ -146,7 +175,7 @@ def askGpt(input_text, role="user"):
             buffer += chunk_message['content']
 
             # Check if the buffer ends with a stop character.
-            if re.search(r'[.,!?]\s*$', buffer):
+            if re.search(r'[.,!:?]\s*$', buffer):
                 print("🗣️", buffer)  # print all messages in the buffer
                 # Add the buffer to the TTS queue
                 tts_queue.put((buffer, buffer_clear))
@@ -165,9 +194,10 @@ def askGpt(input_text, role="user"):
 
     print("collected_parsed_messages", collected_parsed_messages_str)
 
-    history_list.append({'role': 'assistant', 'content': collected_parsed_messages_str})
+    append_and_remove_spaces_history_list({'role': 'assistant', 'content': collected_parsed_messages_str})
 
     filename = get_filename()
+
     # Save history_list in json format
     with open(filename, 'w') as f:
         json.dump(history_list, f, indent=4)
@@ -181,12 +211,10 @@ def askGpt(input_text, role="user"):
             print(f'Action Input: {action_input}')
             ddgs_text_gen = DDGS().text(action_input, backend="api")
             snippets = [result["body"] for result in ddgs_text_gen]
-            first_10_res_str = " -- ".join(snippets)[:1024]
+            first_10_res_str = " -- ".join(snippets)[:768]
 
             result_str = f"""
-            Result: 
-            {first_10_res_str}
-            Thought: I need to use the my observation to answer the question
+            Observation: {first_10_res_str}
             """
 
             print(result_str.lstrip())
@@ -244,8 +272,8 @@ def process_input(input_queue_local):
         input_queue.task_done()
         print(f'✅ Task Done: {input_string}')
 
-        # if not end_conversation:
-        #     requests.get("http://127.0.0.1:6969")
+        if not end_conversation:
+            requests.get("http://127.0.0.1:6969")
 
         if end_conversation:
             clear_history_list()
