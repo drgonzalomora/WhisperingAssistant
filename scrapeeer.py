@@ -7,6 +7,13 @@ from bs4 import BeautifulSoup
 from fuzzywuzzy import fuzz
 
 
+# 📌TODO
+# - Here are the items remaining for using this function. First, we need to update the keyword section to extract that from the search query.
+# - We also need to move this to a modular platform so we can easily reuse this with the open ai function.
+# - Make the script do the scraping in parallel, especially the contents of each URL so that it will be faster. But the final function should be still synchronous and it should wait for the other three scrapers to finalize their task.
+# - Add a proper timeout to ignore pages that takes too long to load.
+# - Check if we can use an ingest function to convert the contents of the search results into a vector database and then perform a similar search query before sending that to an LLM. That should make the results better and will require less cost.
+
 def remove_fuzzy_duplicates(array, similarity_threshold=80):
     # Initialize an empty list to store the unique items
     unique_items = []
