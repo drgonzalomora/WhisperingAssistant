@@ -98,7 +98,7 @@ def get_intent_from_text(command_text):
         if '_sub' in result['id_text'] and result['similarity'] > 0.91:
             top_result_sub_filtered = result
 
-        if '_main' in result['id_text'] and result['similarity'] > 0.889:
+        if '_main' in result['id_text'] and result['similarity'] > 0.90:
             top_result_main_filtered = result
 
     if not top_result_filtered and top_result_main_filtered:
