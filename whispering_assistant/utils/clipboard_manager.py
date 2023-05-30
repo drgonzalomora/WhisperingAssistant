@@ -23,6 +23,7 @@ class ClipboardHandler:
             self.load_clipboard(text_for_ingestion)
         try:
             def copy_and_restore():
+                time.sleep(3)
                 pyclip.copy(self.clipboard_content)
                 self.restore_clipboard(old_clipboard)
 
