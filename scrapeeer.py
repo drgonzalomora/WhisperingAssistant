@@ -1,15 +1,21 @@
+import itertools
 import time
 from pprint import pprint
-import requests
+from langchain.schema import Document
+from langchain.text_splitter import TokenTextSplitter
 from search_engines import Google
-from playwright.sync_api import sync_playwright
-from bs4 import BeautifulSoup
 from fuzzywuzzy import fuzz
 import nltk
 import re
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 from nltk.tokenize import word_tokenize
+from InstructorEmbedding import INSTRUCTOR
+
+model = INSTRUCTOR('hkunlp/instructor-large', device="cpu")
+
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
 
 # 📌TODO
 # - Here are the items remaining for using this function. First, we need to update the keyword section to extract that from the search query.
@@ -96,7 +102,7 @@ async def extract_text(session: ClientSession, url: str, query_root_keywords=Non
 
     # drop blank lines and lines with less than or equal to 5 words
     text = '\n'.join(
-        chunk for chunk in chunks if chunk and (0 < len(chunk.split()) < 200 or len(chunk.split()) > 400)).split(
+        chunk for chunk in chunks if chunk and (8 < len(chunk.split()) < 200 or len(chunk.split()) > 400)).split(
         '\n')
 
     text = filter_with_adjacent_items(text, query_root_keywords=query_root_keywords, num_adjacent=3)
@@ -114,18 +120,21 @@ engine = Google()
 # If scraping returned empty move on to other one until you have 3
 # Revert back to requests, playwright is too slow
 # icrease page to 2, and ask the user to open all those with relevant links insteads
-query = "BTC to PHP"
+query = "is intel i9 better than the latest mac laptop?"
 keywords = get_root_words(query)
 print(keywords)
+
+print("keywords", keywords)
 
 results = engine.search(query, pages=1)
 
 pprint(results.results())
 
 # Only TOp 3
-results_links = results.links()[:5]
+results_links = results.links()[:3]
+results_text = "  ".join(results.text())
 
-pprint(results_links)
+pprint(results_text)
 
 
 async def main():
@@ -135,6 +144,84 @@ async def main():
     return scrape_results
 
 
+start_time = time.time()
+
 results = asyncio.run(main())
 
+end_time = time.time()
+print(f'scraping took {end_time - start_time} seconds')
+
 print("done", results)
+
+# Flatten the list of lists:
+flattened_results = list(itertools.chain(*results))
+
+# Concatenate all the strings:
+final_text = '  '.join(flattened_results)
+
+# Split text
+text_splitter = TokenTextSplitter(chunk_size=410, chunk_overlap=102)
+documents = text_splitter.split_documents([Document(page_content=final_text)])
+
+print(final_text)
+print("⏳️⏳️⏳️")
+pprint(documents)
+
+# Split text
+text_splitter = TokenTextSplitter(chunk_size=410, chunk_overlap=102)
+results_text_documents = text_splitter.split_documents([Document(page_content=results_text)])
+
+print(results_text)
+print("⏳️⏳️⏳️")
+pprint(results_text_documents)
+
+# 📌 Test intent analysis base logic
+
+
+storage = 'represent document for retrieval: '
+
+query = [
+    ['represent question for retrieving relevant documents: ', query]]
+
+page_contents = [doc.page_content for doc in results_text_documents]
+page_contents_from_scraper = [doc.page_content for doc in documents]
+
+pprint(page_contents)
+pprint(page_contents_from_scraper)
+
+original_array = page_contents + page_contents_from_scraper
+
+corpus = [[storage, item] for item in original_array]
+
+print(query)
+print(corpus)
+
+start_time = time.time()
+
+
+# 📌 Instead of encoding the whole search results, I think we can just do it one by one and once we reach a certain threshold, like a 90% threshold, let's just use that document instead of manually ingesting all the documents.
+query_embeddings = model.encode(query)
+corpus_embeddings = model.encode(corpus)
+
+end_time = time.time()
+print(f'embeddings generation took {end_time - start_time} seconds')
+
+similarities = cosine_similarity(query_embeddings, corpus_embeddings)
+
+# flatten the 2D array to 1D, then argsort in ascending order and reverse array for descending
+retrieved_doc_ids = np.argsort(similarities.flatten())[::-1]
+
+# get top 3 most similar doc ids
+top_three_doc_ids = retrieved_doc_ids[:3]
+
+retrieved_doc_id = np.argmax(similarities)
+
+print(similarities)
+print(retrieved_doc_id)
+print(corpus[top_three_doc_ids[0]])
+print(corpus[top_three_doc_ids[1]])
+print(corpus[top_three_doc_ids[2]])
+
+
+end_time = time.time()
+print(f'cosine took {end_time - start_time} seconds')
