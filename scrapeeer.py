@@ -12,7 +12,7 @@ from nltk.stem import PorterStemmer
 from nltk.tokenize import word_tokenize
 from InstructorEmbedding import INSTRUCTOR
 
-model = INSTRUCTOR('hkunlp/instructor-large', device="cpu")
+model = INSTRUCTOR('hkunlp/instructor-base', device="cpu")
 
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
@@ -178,10 +178,10 @@ pprint(results_text_documents)
 # 📌 Test intent analysis base logic
 
 
-storage = 'represent document for retrieval: '
+storage = 'represent supporting document for retrieval: '
 
 query = [
-    ['represent question for retrieving relevant documents: ', query]]
+    ['represent question for retrieving supporting document: ', 'Which document can answer the question?:' + query]]
 
 page_contents = [doc.page_content for doc in results_text_documents]
 page_contents_from_scraper = [doc.page_content for doc in documents]
@@ -225,3 +225,10 @@ print(corpus[top_three_doc_ids[2]])
 
 end_time = time.time()
 print(f'cosine took {end_time - start_time} seconds')
+
+
+# 📌 TODO:
+# - Significant results are better when using the instructor model. The instructor large model compared to the base model, but it took around 10 times longer compared using the base model. So I guess in this case, we will still use the base model for now. We might just have to update the prompt to have a better result.
+# - Some of the algorithms we can do to make it more accurate is just use at least three relevant documents and make sure not to iterate on all the search results. Let's just iterate them. Well, if we can iterate them in parallel, that's good. And then let's just, once we have at least three successful embeddings with the threshold that is met, we can terminate the processing and then proceed passing the relevant documents to the LLM.
+# - Changing the prompt for the instructor model actually increases the accuracy, so I think it's good practice to include another question in the secondary item for when doing the query.
+# - However, after updating the prompt and making it more accurate, it did increase the time it takes to finish the whole process, but it's only two times longer.
