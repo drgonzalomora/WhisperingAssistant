@@ -22,16 +22,16 @@ from nltk.tokenize import word_tokenize
 nltk.download('punkt')
 nltk.download('stopwords')
 
+
 # If the word is longer than 5 characters, we should include the whole word instead of cutting it.
 def get_root_words(query):
     query = re.sub(r"[^a-zA-Z0-9\s]", "", query)  # Remove all non-alphabetic and non-numeric characters
     stemmer = PorterStemmer()
     stop_words = set(stopwords.words('english'))
     words = word_tokenize(query)
-    filtered_words = [word for word in words if word not in stop_words] #filter out stop words
+    filtered_words = [word for word in words if word not in stop_words]  # filter out stop words
     root_words = [word if len(word) > 8 else stemmer.stem(word) for word in filtered_words]
     return root_words
-
 
 
 def remove_fuzzy_duplicates(array, similarity_threshold=80):
@@ -47,13 +47,13 @@ def remove_fuzzy_duplicates(array, similarity_threshold=80):
     return unique_items
 
 
-def filter_with_adjacent_items(array, keywords, num_adjacent):
+def filter_with_adjacent_items(array, query_root_keywords, num_adjacent):
     # Initialize a list to store indices of items containing the keywords
     indices = []
 
     # Loop through the array to find indices of items containing the keywords
     for i, item in enumerate(array):
-        if any(keyword.lower() in item.lower() for keyword in keywords):
+        if any(keyword.lower() in item.lower() for keyword in query_root_keywords):
             indices.append(i)
 
     # Initialize a list to store the final filtered items
@@ -68,44 +68,25 @@ def filter_with_adjacent_items(array, keywords, num_adjacent):
     return filtered_items
 
 
-# "script"
-excluded_resource_types = ["stylesheet", "image", "font"]
+import aiohttp
+from aiohttp import ClientSession
+from bs4 import BeautifulSoup
+import asyncio
 
 
-def block_aggressively(route):
-    if (route.request.resource_type in excluded_resource_types):
-        route.abort()
-    else:
-        route.continue_()
+async def extract_text(session: ClientSession, url: str, query_root_keywords=None):
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
+    }
+    async with session.get(url, headers=headers) as response:
+        html = await response.text()
 
-
-def extract_text(url, playwright, keywords=None):
-    # v 🚥🚥🚥
-    # headers = {
-    #     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
-    # }
-    # response = requests.get(url, headers=headers)
-    # soup = BeautifulSoup(response.text, 'html.parser')
-    # v 🚥🚥🚥
-    browser = playwright.chromium.launch()
-    context = browser.new_context(
-        user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
-    )
-    context.set_default_timeout(1000)
-    page = context.new_page()
-    page.route("**/*", block_aggressively)
-    page.goto(url)
-
-    content = page.content()
-    soup = BeautifulSoup(content, 'html.parser')
-    # v 🚥🚥🚥
+    soup = BeautifulSoup(html, 'html.parser')
 
     for script in soup(['script', 'style']):  # remove all javascript and stylesheet code
         script.extract()
 
     text = soup.get_text()
-
-    # print("text", text)
 
     # break into lines and remove leading and trailing space on each
     lines = (line.strip() for line in text.splitlines())
@@ -113,13 +94,12 @@ def extract_text(url, playwright, keywords=None):
     # break multi-headlines into a line each
     chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
 
-    # print('chunks', [chunk for chunk in chunks])
-
     # drop blank lines and lines with less than or equal to 5 words
     text = '\n'.join(
         chunk for chunk in chunks if chunk and (0 < len(chunk.split()) < 200 or len(chunk.split()) > 400)).split(
         '\n')
-    text = filter_with_adjacent_items(text, keywords=keywords, num_adjacent=3)
+
+    text = filter_with_adjacent_items(text, query_root_keywords=query_root_keywords, num_adjacent=3)
     text = remove_fuzzy_duplicates(text)
 
     return text
@@ -143,12 +123,18 @@ results = engine.search(query, pages=1)
 pprint(results.results())
 
 # Only TOp 3
-results_links = results.links()[:3]
+results_links = results.links()[:5]
 
 pprint(results_links)
 
-for result_link in results_links:
-    time.sleep(0.1)
-    print("🔎🔎🔎🔎 ", result_link)
-    with sync_playwright() as playwright:
-        pprint(extract_text(result_link, playwright, keywords=keywords))
+
+async def main():
+    async with aiohttp.ClientSession() as session:
+        tasks = [extract_text(session, link, query_root_keywords=keywords) for link in results_links]
+        scrape_results = await asyncio.gather(*tasks)
+    return scrape_results
+
+
+results = asyncio.run(main())
+
+print("done", results)
