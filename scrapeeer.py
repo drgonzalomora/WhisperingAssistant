@@ -1,5 +1,4 @@
 import itertools
-import time
 from pprint import pprint
 from langchain.schema import Document
 from langchain.text_splitter import TokenTextSplitter
@@ -11,22 +10,18 @@ from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 from nltk.tokenize import word_tokenize
 from InstructorEmbedding import INSTRUCTOR
+from sklearn.metrics.pairwise import cosine_similarity
+import aiohttp
+from aiohttp import ClientSession
+from bs4 import BeautifulSoup
+import asyncio
 
 model = INSTRUCTOR('hkunlp/instructor-base', device="cpu")
-
-import numpy as np
-from sklearn.metrics.pairwise import cosine_similarity
-
-# 📌TODO
-# - Here are the items remaining for using this function. First, we need to update the keyword section to extract that from the search query.
-# - We also need to move this to a modular platform so we can easily reuse this with the open ai function.
-# - Make the script do the scraping in parallel, especially the contents of each URL so that it will be faster. But the final function should be still synchronous and it should wait for the other three scrapers to finalize their task.
-# - Add a proper timeout to ignore pages that takes too long to load.
-# - Check if we can use an ingest function to convert the contents of the search results into a vector database and then perform a similar search query before sending that to an LLM. That should make the results better and will require less cost.
-
-
+engine = Google()
 nltk.download('punkt')
 nltk.download('stopwords')
+
+similarity_threshold = 0.87
 
 
 # If the word is longer than 5 characters, we should include the whole word instead of cutting it.
@@ -74,12 +69,6 @@ def filter_with_adjacent_items(array, query_root_keywords, num_adjacent):
     return filtered_items
 
 
-import aiohttp
-from aiohttp import ClientSession
-from bs4 import BeautifulSoup
-import asyncio
-
-
 async def extract_text(session: ClientSession, url: str, query_root_keywords=None):
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
@@ -111,124 +100,84 @@ async def extract_text(session: ClientSession, url: str, query_root_keywords=Non
     return text
 
 
-engine = Google()
-
-# Remove pipes
-# Remove utf-8 chars
-# Use character count instead of word count.
-# Concatenate all the texts from the page 1 result
-# If scraping returned empty move on to other one until you have 3
-# Revert back to requests, playwright is too slow
-# icrease page to 2, and ask the user to open all those with relevant links insteads
-query = "is intel i9 better than the latest mac laptop?"
-keywords = get_root_words(query)
-print(keywords)
-
-print("keywords", keywords)
-
-results = engine.search(query, pages=1)
-
-pprint(results.results())
-
-# Only TOp 3
-results_links = results.links()[:3]
-results_text = "  ".join(results.text())
-
-pprint(results_text)
-
-
-async def main():
+async def scrape_async(keywords, results_links):
     async with aiohttp.ClientSession() as session:
         tasks = [extract_text(session, link, query_root_keywords=keywords) for link in results_links]
         scrape_results = await asyncio.gather(*tasks)
     return scrape_results
 
 
-start_time = time.time()
+def get_similar_contexts(query_text):
+    # 📌 TODO: Make sure to add the links to the documents metadata so user can check the actual resource
+    keywords = get_root_words(query_text)
+    search_engine_results = engine.search(query_text, pages=1)
+    pprint(search_engine_results.results())
 
-results = asyncio.run(main())
+    search_engine_texts = "  ".join(search_engine_results.text())
+    print('search_engine_texts', search_engine_texts)
 
-end_time = time.time()
-print(f'scraping took {end_time - start_time} seconds')
+    text_splitter = TokenTextSplitter(chunk_size=410, chunk_overlap=102)
+    search_engine_texts_documents = text_splitter.split_documents([Document(page_content=search_engine_texts)])
 
-print("done", results)
+    print("⏳️⏳️⏳️")
+    pprint(search_engine_texts_documents)
 
-# Flatten the list of lists:
-flattened_results = list(itertools.chain(*results))
+    similarity, related_page_content = get_similarity(query_text, search_engine_texts_documents)
+    print("✅ similarity", similarity, related_page_content)
 
-# Concatenate all the strings:
-final_text = '  '.join(flattened_results)
+    if similarity > similarity_threshold:
+        return related_page_content
 
-# Split text
-text_splitter = TokenTextSplitter(chunk_size=410, chunk_overlap=102)
-documents = text_splitter.split_documents([Document(page_content=final_text)])
+    print("search result texts does not have enough context. Need to scrape results")
 
-print(final_text)
-print("⏳️⏳️⏳️")
-pprint(documents)
+    # Only Top 3
+    search_engine_links = search_engine_results.links()[:3]
+    scrape_async_results = asyncio.run(scrape_async(keywords, search_engine_links))
 
-# Split text
-text_splitter = TokenTextSplitter(chunk_size=410, chunk_overlap=102)
-results_text_documents = text_splitter.split_documents([Document(page_content=results_text)])
+    flattened_scrape_async_results = list(itertools.chain(*scrape_async_results))
+    string_scrape_async_results = '  '.join(flattened_scrape_async_results)
 
-print(results_text)
-print("⏳️⏳️⏳️")
-pprint(results_text_documents)
+    text_splitter = TokenTextSplitter(chunk_size=410, chunk_overlap=102)
+    scrape_async_results_documents = text_splitter.split_documents([Document(page_content=string_scrape_async_results)])
 
-# 📌 Test intent analysis base logic
+    print("⏳️⏳️⏳️")
+    pprint(scrape_async_results_documents)
 
+    similarity, related_page_content = get_similarity(query_text, scrape_async_results_documents)
+    print("✅ similarity", similarity, related_page_content)
 
-storage = 'represent supporting document for retrieval: '
-
-query = [
-    ['represent question for retrieving supporting document: ', 'Which document can answer the question?:' + query]]
-
-page_contents = [doc.page_content for doc in results_text_documents]
-page_contents_from_scraper = [doc.page_content for doc in documents]
-
-pprint(page_contents)
-pprint(page_contents_from_scraper)
-
-original_array = page_contents + page_contents_from_scraper
-
-corpus = [[storage, item] for item in original_array]
-
-print(query)
-print(corpus)
-
-start_time = time.time()
+    return related_page_content
 
 
-# 📌 Instead of encoding the whole search results, I think we can just do it one by one and once we reach a certain threshold, like a 90% threshold, let's just use that document instead of manually ingesting all the documents.
-query_embeddings = model.encode(query)
-corpus_embeddings = model.encode(corpus)
+def get_similarity(query_text, documents_to_search):
+    storage = 'represent supporting document for retrieval: '
 
-end_time = time.time()
-print(f'embeddings generation took {end_time - start_time} seconds')
+    query_text_decorated = [
+        ['represent question for retrieving supporting document: ',
+         'Which document can answer the question?:' + query_text]]
 
-similarities = cosine_similarity(query_embeddings, corpus_embeddings)
+    document_page_contents = [doc.page_content for doc in documents_to_search]
+    pprint(document_page_contents)
 
-# flatten the 2D array to 1D, then argsort in ascending order and reverse array for descending
-retrieved_doc_ids = np.argsort(similarities.flatten())[::-1]
+    corpus = [[storage, item] for item in document_page_contents]
 
-# get top 3 most similar doc ids
-top_three_doc_ids = retrieved_doc_ids[:3]
+    print(query_text_decorated)
+    print(corpus)
 
-retrieved_doc_id = np.argmax(similarities)
+    query_embeddings = model.encode(query_text_decorated)
 
-print(similarities)
-print(retrieved_doc_id)
-print(corpus[top_three_doc_ids[0]])
-print(corpus[top_three_doc_ids[1]])
-print(corpus[top_three_doc_ids[2]])
+    # 📌 TODO: Convert this to async so we can compute similarities in parallel
+    for document_page_content in document_page_contents:
+        print("📌 document_page_content", document_page_content)
+        corpus_embeddings = model.encode([document_page_content])
+        similarities = cosine_similarity(query_embeddings, corpus_embeddings)
+        print("📌 similarities", similarities)
 
+        if similarities[0][0] > similarity_threshold:
+            return similarities[0][0], document_page_content
 
-end_time = time.time()
-print(f'cosine took {end_time - start_time} seconds')
+    # If for loop not meet above, then just return a default value
+    return 0.0, ""
 
-
-# 📌 TODO:
-# - Significant results are better when using the instructor model. The instructor large model compared to the base model, but it took around 10 times longer compared using the base model. So I guess in this case, we will still use the base model for now. We might just have to update the prompt to have a better result.
-# - Some of the algorithms we can do to make it more accurate is just use at least three relevant documents and make sure not to iterate on all the search results. Let's just iterate them. Well, if we can iterate them in parallel, that's good. And then let's just, once we have at least three successful embeddings with the threshold that is met, we can terminate the processing and then proceed passing the relevant documents to the LLM.
-# - Changing the prompt for the instructor model actually increases the accuracy, so I think it's good practice to include another question in the secondary item for when doing the query.
-# - However, after updating the prompt and making it more accurate, it did increase the time it takes to finish the whole process, but it's only two times longer.
+# 📌 TEST Execution
+# get_similar_contexts('is intel i9 better than ryzen?')
