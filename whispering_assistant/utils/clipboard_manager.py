@@ -55,10 +55,15 @@ class TypingViaClipBoardHandler:
         time.sleep(0.05)
         pyclip.copy(self.old_clipboard)
 
-    def run_thread(self, text_parameter):
+    def run_thread(self, text_parameter, keypress_after=""):
+
         def copy_paste_restore():
             self.load_clipboard(text_parameter)
             self.paste_input()
+            if keypress_after:
+                import pyautogui
+                time.sleep(0.05)
+                pyautogui.press(keypress_after)
 
         clipboard_thread = threading.Thread(target=copy_paste_restore)
         clipboard_thread.start()

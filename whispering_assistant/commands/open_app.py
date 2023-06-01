@@ -31,8 +31,4 @@ class OpenApp(BaseCommand):
         time.sleep(0.5)
 
         # Type the text parameter
-        typingViaClipBoardHandler.run_thread(text_parameter)
-        time.sleep(0.45)
-
-        # Press the Enter key
-        pyautogui.press("enter")
+        typingViaClipBoardHandler.run_thread(text_parameter, "enter")
