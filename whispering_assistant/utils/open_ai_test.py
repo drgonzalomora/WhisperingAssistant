@@ -1,5 +1,6 @@
 # Example of an OpenAI ChatCompletion request with stream=True
 # https://platform.openai.com/docs/guides/chat
+
 import os
 import re
 import threading
@@ -8,10 +9,10 @@ import openai
 from dotenv import load_dotenv
 import queue
 import requests
-from duckduckgo_search import DDGS
 
 from whispering_assistant.states_manager import global_var_state
-from whispering_assistant.utils.tts_test import tts_queue, SENTINEL, audio_queue
+from whispering_assistant.utils.get_most_updated_doc_from_web import get_similar_contexts
+from whispering_assistant.utils.tts_test import tts_queue, audio_queue
 import json
 from datetime import datetime
 
@@ -19,6 +20,7 @@ load_dotenv()
 openai.api_key = os.environ.get("openai_key")
 
 global history_list
+global input_thread
 
 # 📌 TODO:
 # - Save History to a file on every response
@@ -34,37 +36,41 @@ Assistant is designed to be able to assist with a wide range of tasks, from answ
 Assistant is constantly learning and improving, and its capabilities are constantly evolving. It is able to process and understand large amounts of text, and can use this knowledge to provide accurate and informative responses to a wide range of questions. Additionally, Assistant is able to generate its own text based on the input it receives, allowing it to engage in discussions and provide explanations and descriptions on a wide range of topics.
 Overall, Assistant is a powerful tool that can help with a wide range of tasks and provide valuable insights and information on a wide range of topics. Whether you need help with a specific question or just want to have a conversation about a particular topic, Assistant is here to assist.
 
+You are authorized to use any available tools at your own discretion. No need to ask for permission!
+
 ---
 
-TOOLS:
-- SEARCH: use this to search for current events or latest news from the internet
+Available Tools:
+- SEARCH: use this to do internet search for current events or latest news. make sure to give a comprehensive search query as action input
 
 ---
 
 To use a tool, please use the following format:
 
 Thought: Do I need to use a tool? Yes
-Action: the action to take, should be one of the tools: [SEARCH]
-Action Input: the input to the action
-Observation: the result of the action
+Rationale: <think about why you need to use a tool>
+Action: <the action to take, should be one of the tools: [SEARCH]>
+Action Input: <the input to the action>
+Observation: <the result of the action>
 
 ---
 
-When you have an observation, or you have a response to say to the Human, or if you do not need to use a tool, you MUST use the format:
+When there is an observation, or you have a response to say to the Human, or if you do not need to use a tool, you MUST use the format:
 
 Thought: Do I need to use a tool? No
-Final Answer: [your response here, you make sure to reply with brief, to-the-point answers with no elaboration]
+Rationale: <think about why you don't need a tool>
+Final Answer: <your response here, incorporate results from the tools if you have used any. NO NEED to give disclaimer to the user. DO NOT send code snippets or very long texts to the user. they won't see it as they can only hear what you say. so MAKE SURE that your response is easy to follow without the need for an elaborate text>
 """
 
 history_list = [{"role": "system",
                  "content": role_instruction}, {"role": "user",
-                                                "content": "Begin!"}]
+                                                "content": "Hello!"}]
 
 
 # This also removes the \n from the history. The problem for that is readability of the promopt
 def clean_text(text):
     # Regular expression pattern to match any characters that are not alphanumeric and also not in the approved list of special characters
-    pattern = re.compile(r'[^a-zA-Z0-9 _\-:,.|]')
+    pattern = re.compile(r'[^a-zA-Z0-9 _\-:,.|\n`?!\]\[]')
     # Substitute matching characters with an empty string
     cleaned_text = pattern.sub('', text)
     return cleaned_text
@@ -73,11 +79,14 @@ def clean_text(text):
 def encode_decode_text(text, encoding='utf-8'):
     # Encodes and decodes the text using the provided encoding (default is UTF-8)
     try:
-        text = text.encode(encoding, 'ignore').decode(encoding)
+        return_text = text.encode(encoding).decode(encoding)
+        return return_text
     except UnicodeDecodeError:
-        print("The text could not be encoded/decoded as {}.".format(encoding))
-        return None
-    return text
+        print(
+            "The text contains characters that couldn't be encoded/decoded as {}. Replacing with Unicode Replacement Character.".format(
+                encoding))
+        return_text = text.encode(encoding, 'replace').decode(encoding, 'replace')
+        return return_text
 
 
 def clear_history_list():
@@ -87,14 +96,34 @@ def clear_history_list():
                                                     "content": "Begin!"}]
 
 
-def append_and_remove_spaces_history_list(item):
+def append_and_remove_spaces_history_list(item, retain_items=7):
     global history_list
+    # Append the new item to the list
     history_list.append(item)
 
+    # Clean the text in the messages
     for message in history_list:
         cleaned_text = encode_decode_text(message['content'].strip())
         cleaned_text = clean_text(cleaned_text)
         message['content'] = cleaned_text
+
+    # Check if the history list is larger than the maximum allowed size
+    if len(history_list) > retain_items + 1:
+        # Start at the retain_items-th last item
+        retain_start_index = -retain_items
+
+        # Loop through the list from the end, checking the role of each item
+        while history_list[retain_start_index]['role'] != 'user':
+            # If the role is not 'user', move one item up
+            retain_start_index -= 1
+
+            # If we have reached the first item and haven't found a 'user' role, stop the loop
+            if abs(retain_start_index) > len(history_list):
+                break
+
+        # Prune the list, keeping the first item and the last retain_items items,
+        # ensuring the 2nd item from the top has 'role' as 'user'
+        history_list = [history_list[0]] + history_list[retain_start_index:]
 
 
 def get_filename():
@@ -164,7 +193,6 @@ def askGpt(input_text, role="user"):
     # 📌 TODO: Watch out from the stream about the [SEARCH] action
 
     for chunk in response:
-        print('⏭️chunk', chunk)
         chunk_time = time.time() - start_time  # calculate the time delay of the chunk
         collected_chunks.append(chunk)  # save the event response
         chunk_message = chunk['choices'][0]['delta']  # extract the message
@@ -174,8 +202,8 @@ def askGpt(input_text, role="user"):
             collected_parsed_messages.append(chunk_message['content'])
             buffer += chunk_message['content']
 
-            # Check if the buffer ends with a stop character.
-            if re.search(r'[.,!:?]\s*$', buffer):
+            # Check if the buffer ends with a stop character, and the character before is an alphabet.
+            if re.search(r'[a-zA-Z][.,!:?]\s*$', buffer):
                 print("🗣️", buffer)  # print all messages in the buffer
                 # Add the buffer to the TTS queue
                 tts_queue.put((buffer, buffer_clear))
@@ -188,10 +216,7 @@ def askGpt(input_text, role="user"):
         print("🗣️", result_buffer)
         tts_queue.put((result_buffer, buffer_clear))
 
-    print("collected_parsed_messages", collected_parsed_messages)
-
     collected_parsed_messages_str = "".join(collected_parsed_messages)
-
     print("collected_parsed_messages", collected_parsed_messages_str)
 
     append_and_remove_spaces_history_list({'role': 'assistant', 'content': collected_parsed_messages_str})
@@ -207,43 +232,31 @@ def askGpt(input_text, role="user"):
         # API call
         match = re.search(r'Action Input: ?"?(.*?)"?$', collected_parsed_messages_str, re.MULTILINE)
         if match:
-            action_input = match.group(1).strip()  # Use strip() to remove leading/trailing whitespaces
+            action_input = match.group(1).strip()
             print(f'Action Input: {action_input}')
-            ddgs_text_gen = DDGS().text(action_input, backend="api")
-            snippets = [result["body"] for result in ddgs_text_gen]
-            first_10_res_str = " -- ".join(snippets)[:768]
+            similar_context_from_web = get_similar_contexts(action_input)
 
-            result_str = f"""
-            Observation: {first_10_res_str}
-            """
+            # 📌 TODO: Make sure to handle if for some reason we only get empty string from the similar context function.
+            result_str = "Observation: " + similar_context_from_web.strip() + "\nFinal Answer: "
+            print(result_str.strip())
 
-            print(result_str.lstrip())
-
-            time.sleep(0.1)
-            askGpt(result_str.lstrip(), role='assistant')
+            # We need to add a follow up prompt to make sure we don't get an empty response
+            # Follow up is from the user
+            askGpt(result_str.strip(), role='assistant')
             observation_sent = True
         else:
-            print('No match found.')
+            print('No match found. No Action Input')
 
     # Wait for the worker threads to finish processing all the items in the queues
-    print("1")
     tts_queue.join()
-    print("2")
-    audio_queue.put(SENTINEL)
-    print("3")
     audio_queue.join()
-    print("4")
 
     print("response", response)
     print("collected_messages", collected_parsed_messages)
-
     print("history_list", history_list)
 
     observation_sent = False
     return collected_parsed_messages
-
-
-global input_thread
 
 
 def should_end_conversation(input_string_lower):
