@@ -21,7 +21,7 @@ engine = Google()
 nltk.download('punkt')
 nltk.download('stopwords')
 
-similarity_threshold = 0.87
+similarity_threshold = 0.90
 
 
 # If the word is longer than 5 characters, we should include the whole word instead of cutting it.
@@ -107,7 +107,17 @@ async def scrape_async(keywords, results_links):
     return scrape_results
 
 
+# Incase we don't meet the threshold still return the highest on all the searches
+max_similarity = 0.0
+best_document = ""
+
 def get_similar_contexts(query_text):
+    global max_similarity, best_document
+
+    # We are resetting it here so that we don't get the previous result from previous searches
+    max_similarity = 0.0
+    best_document = ""
+
     # 📌 TODO: Make sure to add the links to the documents metadata so user can check the actual resource
     keywords = get_root_words(query_text)
     search_engine_results = engine.search(query_text, pages=1)
@@ -149,7 +159,11 @@ def get_similar_contexts(query_text):
     return related_page_content
 
 
+
+
+
 def get_similarity(query_text, documents_to_search):
+    global max_similarity, best_document
     storage = 'represent supporting document for retrieval: '
 
     query_text_decorated = [
@@ -171,13 +185,18 @@ def get_similarity(query_text, documents_to_search):
         print("📌 document_page_content", document_page_content)
         corpus_embeddings = model.encode([document_page_content])
         similarities = cosine_similarity(query_embeddings, corpus_embeddings)
+        similarity = similarities[0][0]
         print("📌 similarities", similarities)
 
-        if similarities[0][0] > similarity_threshold:
-            return similarities[0][0], document_page_content
+        if similarity > similarity_threshold:
+            return similarity, document_page_content
+
+        if similarity > max_similarity:
+            max_similarity = similarity
+            best_document = document_page_content
 
     # If for loop not meet above, then just return a default value
-    return 0.0, ""
+    return max_similarity, best_document
 
 # 📌 TEST Execution
 # get_similar_contexts('is intel i9 better than ryzen?')
