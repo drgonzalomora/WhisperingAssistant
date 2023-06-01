@@ -1,54 +1,48 @@
 import re
-from fairseq.checkpoint_utils import load_model_ensemble_and_task_from_hf_hub
-from fairseq.models.text_to_speech.hub_interface import TTSHubInterface
-import soundfile as sf
 import threading
 from queue import Queue
+
+import inflect
 from playsound import playsound
 import time
-# v 🚥🚥🚥
 
 from transformers import SpeechT5Processor, SpeechT5ForTextToSpeech, SpeechT5HifiGan
 import torch
 import soundfile as sf
 from datasets import load_dataset
 
-# https://github.com/microsoft/SpeechT5/issues/8 more fine tuned model
+# https://github.com/microsoft/SpeechT5/issues/8 more fine-tuned model
 processor = SpeechT5Processor.from_pretrained("microsoft/speecht5_tts")
 model = SpeechT5ForTextToSpeech.from_pretrained("microsoft/speecht5_tts")
 vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan")
-
-# inputs = processor(text="Hello, my dog is cute", return_tensors="pt")
 
 # load xvector containing speaker's voice characteristics from a dataset
 embeddings_dataset = load_dataset("Matthijs/cmu-arctic-xvectors", split="validation")
 speaker_embeddings = torch.tensor(embeddings_dataset[7306]["xvector"]).unsqueeze(0)
 
-# speech = model.generate_speech(inputs["input_ids"], speaker_embeddings, vocoder=vocoder)
-
-# sf.write("speech.wav", speech.numpy(), samplerate=16000)
-# playsound("speech.wav")
-
-# exit(0)
-
-# v 🚥🚥🚥
-# Alternatives
-# speecht5 did not mention anything about inference so its better to just try it ourselves
-# https://huggingface.co/blog/speecht5
-# https://huggingface.co/spaces/SurendraKumarDhaka/Text-to-speech-converter
-# https://huggingface.co/speechbrain/tts-tacotron2-ljspeech?text=A+quick+brown+fox+jumped+over+the+lazy+dog
-# facebook/fastspeech2-en-200_speaker-cv4
-# models, cfg, task = load_model_ensemble_and_task_from_hf_hub(
-#     "facebook/fastspeech2-en-ljspeech",
-#     arg_overrides={"vocoder": "hifigan", "fp16": False, "cpu": True}
-# )
-#
-# model = models[0]
-# TTSHubInterface.update_cfg_with_data_cfg(cfg, task.data_cfg)
-# generator = task.build_generator([model], cfg)
-
 # Define a special sentinel value
 SENTINEL = 'STOP'
+
+
+def reword_to_make_it_easier_to_pronounce(s):
+    p = inflect.engine()
+    words = s.split()
+    new_words = []
+    for word in words:
+        if word.replace('.', '').isdigit():  # Check if the word is a number
+            if '.' in word:  # Handle decimal number
+                whole, decimal = word.split('.')
+                whole_word = p.number_to_words(whole)
+                decimal_word = ' '.join([p.number_to_words(i) for i in decimal])
+                # Handle Number ranges like 20-30
+                new_words.append(f"{whole_word} point {decimal_word}")
+            else:  # Handle whole number
+                new_words.append(p.number_to_words(word))
+        elif word.isupper() and len(word) > 1:  # Check if the word is an abbreviation
+            new_words.append(' '.join(list(word)) + ' ')
+        else:
+            new_words.append(word)
+    return ' '.join(new_words)
 
 
 # Define a function to split text into chunks of a certain number of words
@@ -101,13 +95,36 @@ def contains_only_special_characters(string):
     return match is not None
 
 
-def tts_chunk_by_chunk(input_text, callback=None, prefix=""):
-    # Split the input text into chunks at stop characters
-    chunks = re.split(r'(?<=\n)|(?<=[^.,!?\n\s][.,!?]\s)', input_text)
+# TODO: We should convert numbers to word numbers since model cannot pronounce
+
+def tts_chunk_by_chunk(input_text, callback=None, prefix="", word_limit=5):
+    # Split the input text into words
+    words = input_text.split()
+
+    # Buffer for accumulating words
+    buffer = []
+
+    # List to hold chunks
+    chunks = []
+
+    for word in words:
+        # Add word to buffer
+        buffer.append(word)
+
+        # this should make sure not to make number figures harder to read
+        # If a stop character is found or the word limit is reached, create a chunk
+        if re.search(r'[.,!?]$', word) or len(buffer) == word_limit:
+            chunks.append(" ".join(buffer))
+            # Clear the buffer
+            buffer = []
+
+    # If there are remaining words in the buffer after processing all words, add them as a chunk
+    if buffer:
+        chunks.append(" ".join(buffer))
 
     # Process each chunk
     for i, chunk in enumerate(chunks):
-        chunk_ingest = chunk.strip()
+        chunk_ingest = reword_to_make_it_easier_to_pronounce(chunk.strip())
         print(f'Processing chunk {i + 1} of {len(chunks)}')
 
         print("chunk_ingest", chunk_ingest)
@@ -116,13 +133,10 @@ def tts_chunk_by_chunk(input_text, callback=None, prefix=""):
             # Get the model input for this chunk
             # sample = TTSHubInterface.get_model_input(task, chunk_ingest)
 
-
-
             # Generate the speech audio for this chunk
             start_time = time.time()
             inputs = processor(text=chunk_ingest, return_tensors="pt")
             speech = model.generate_speech(inputs["input_ids"], speaker_embeddings, vocoder=vocoder)
-            # wav, rate = TTSHubInterface.get_prediction(task, model, generator, sample)
             end_time = time.time()
 
             print(f'Text-to-speech generation for chunk {i + 1} took {end_time - start_time} seconds')
@@ -169,11 +183,7 @@ def audio_worker():
         # Wait for a filename to be added to the queue
         output_file = audio_queue.get()
 
-        print("output_file", output_file, output_file == SENTINEL)
-
-        # Break the loop if the sentinel value is seen
-        if output_file != SENTINEL:
-            # Play the audio file
+        if output_file:
             playsound(output_file)
 
         # Mark the task as done
