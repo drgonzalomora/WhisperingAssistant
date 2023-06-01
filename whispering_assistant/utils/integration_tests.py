@@ -1,5 +1,30 @@
 # ⚠️ use this to do some testing for plugin execution based on the transcript created.
 
+# v 🚥🚥🚥
+# import inflect
+
+# def num_to_words(s):
+#     p = inflect.engine()
+#     words = s.split()
+#     new_words = []
+#     for word in words:
+#         if word.replace('.', '').isdigit():  # Check if the word is a number
+#             if '.' in word:  # Handle decimal number
+#                 whole, decimal = word.split('.')
+#                 whole_word = p.number_to_words(whole)
+#                 decimal_word = ' '.join([p.number_to_words(i) for i in decimal])
+#                 new_words.append(f"{whole_word} point {decimal_word}")
+#             else:  # Handle whole number
+#                 new_words.append(p.number_to_words(word))
+#         elif word.isupper() and len(word) > 1:  # Check if the word is an abbreviation
+#             new_words.append('...'.join(list(word)) + '...')
+#         else:
+#             new_words.append(word)
+#     return ' '.join(new_words)
+#
+# s = "i have 2.1 change in my AMD shares"
+# print(num_to_words(s))  # "i have two point one change in my A...M...D... shares"
+#
 
 # v 🚥🚥🚥
 # from whispering_assistant.utils.tts_test import tts_queue
@@ -9,7 +34,7 @@
 #     pass
 #
 #
-# tts_queue.put(("A quick brown fox jump over the lazy dog.", emptypass))
+# tts_queue.put(("with revenue .A.G.I.", emptypass))
 
 # v 🚥🚥🚥
 # import re
