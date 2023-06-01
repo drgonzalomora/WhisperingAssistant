@@ -165,12 +165,12 @@ class TalkGPTWithClipboardContext(BaseCommand):
 
     def run(self, text_parameter, raw_text, command_intent=None, *args, **kwargs):
         modified_text = text_parameter
+        raw_text_for_ingestion = raw_text
 
         chatgpt_type = 'GPT4' if GPT4_ALIAS in raw_text.lower() else 'GPT3'
         resume_keywords = ['continue', 'resume']
         clipBoard_keywords = ['clipboard', 'context', 'relation']
 
-        clipboard_needed = any(keyword in raw_text.lower() for keyword in clipBoard_keywords)
         only_resume_conversation = any(keyword in raw_text.lower() for keyword in resume_keywords)
         check_gpt_type = True if not only_resume_conversation else False
         curr_clipboard = None
@@ -186,6 +186,13 @@ class TalkGPTWithClipboardContext(BaseCommand):
 
             if best_match and 'prompt' in best_match:
                 prompt_template = best_match['prompt']
+
+        # TODO: If the prompt requires the context, we just add the keyword context so we execute the same code as before.
+        # Right now we're just assuming that all prompt injections requires a copy of the clipboard.
+        if prompt_template:
+            raw_text_for_ingestion = raw_text_for_ingestion + "(use the context)"
+
+        clipboard_needed = any(keyword in raw_text_for_ingestion.lower() for keyword in clipBoard_keywords)
 
         # Handle Clipboard injection
         if clipboard_needed:
