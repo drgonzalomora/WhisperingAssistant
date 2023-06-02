@@ -113,7 +113,7 @@ def tts_chunk_by_chunk(input_text, callback=None, prefix="", word_limit=5):
 
         # this should make sure not to make number figures harder to read
         # If a stop character is found or the word limit is reached, create a chunk
-        if re.search(r'[.,!?]$', word) or len(buffer) == word_limit:
+        if re.search(r'[.,!?\n]$', word) or len(buffer) == word_limit:
             chunks.append(" ".join(buffer))
             # Clear the buffer
             buffer = []
