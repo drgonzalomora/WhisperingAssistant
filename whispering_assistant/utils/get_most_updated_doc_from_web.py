@@ -21,7 +21,7 @@ engine = Google()
 nltk.download('punkt')
 nltk.download('stopwords')
 
-similarity_threshold = 0.90
+similarity_threshold = 0.93
 
 
 # If the word is longer than 5 characters, we should include the whole word instead of cutting it.
@@ -74,7 +74,12 @@ async def extract_text(session: ClientSession, url: str, query_root_keywords=Non
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
     }
     async with session.get(url, headers=headers) as response:
-        html = await response.text()
+        try:
+            html = await response.text()
+        except UnicodeDecodeError:
+            print("Error decoding response text as UTF-8. Attempting with replacement characters.")
+            raw_response = await response.read()
+            html = raw_response.decode('utf-8', 'replace')
 
     soup = BeautifulSoup(html, 'html.parser')
 
@@ -94,7 +99,7 @@ async def extract_text(session: ClientSession, url: str, query_root_keywords=Non
         chunk for chunk in chunks if chunk and (8 < len(chunk.split()) < 200 or len(chunk.split()) > 400)).split(
         '\n')
 
-    text = filter_with_adjacent_items(text, query_root_keywords=query_root_keywords, num_adjacent=3)
+    text = filter_with_adjacent_items(text, query_root_keywords=query_root_keywords, num_adjacent=5)
     text = remove_fuzzy_duplicates(text)
 
     return text
@@ -111,59 +116,52 @@ async def scrape_async(keywords, results_links):
 max_similarity = 0.0
 best_document = ""
 
+
 def get_similar_contexts(query_text):
-    global max_similarity, best_document
+    global max_similarity, best_documents
 
-    # We are resetting it here so that we don't get the previous result from previous searches
+    # We are resetting it here so that we don't get the previous results from previous searches
     max_similarity = 0.0
-    best_document = ""
+    best_documents = []
 
-    # 📌 TODO: Make sure to add the links to the documents metadata so user can check the actual resource
     keywords = get_root_words(query_text)
     search_engine_results = engine.search(query_text, pages=1)
-    pprint(search_engine_results.results())
 
     search_engine_texts = "  ".join(search_engine_results.text())
-    print('search_engine_texts', search_engine_texts)
 
     text_splitter = TokenTextSplitter(chunk_size=410, chunk_overlap=102)
     search_engine_texts_documents = text_splitter.split_documents([Document(page_content=search_engine_texts)])
 
-    print("⏳️⏳️⏳️")
-    pprint(search_engine_texts_documents)
+    similarities, related_page_contents = get_similarities(query_text, search_engine_texts_documents)
 
-    similarity, related_page_content = get_similarity(query_text, search_engine_texts_documents)
-    print("✅ similarity", similarity, related_page_content)
+    # Here we sort the results by their similarity and select the top 3
+    top_three = sorted(zip(similarities, related_page_contents), key=lambda pair: pair[0], reverse=True)[:3]
 
-    if similarity > similarity_threshold:
-        return related_page_content
+    if all(similarity > similarity_threshold for similarity, _ in top_three):
+        best_documents.extend([content for _, content in top_three])
+        return " ".join(best_documents)
 
-    print("search result texts does not have enough context. Need to scrape results")
-
-    # Only Top 3
+    # If the search result texts do not have enough context, we need to scrape results
     search_engine_links = search_engine_results.links()[:3]
     scrape_async_results = asyncio.run(scrape_async(keywords, search_engine_links))
 
     flattened_scrape_async_results = list(itertools.chain(*scrape_async_results))
     string_scrape_async_results = '  '.join(flattened_scrape_async_results)
 
-    text_splitter = TokenTextSplitter(chunk_size=410, chunk_overlap=102)
     scrape_async_results_documents = text_splitter.split_documents([Document(page_content=string_scrape_async_results)])
 
-    print("⏳️⏳️⏳️")
-    pprint(scrape_async_results_documents)
+    similarities, related_page_contents = get_similarities(query_text, scrape_async_results_documents)
 
-    similarity, related_page_content = get_similarity(query_text, scrape_async_results_documents)
-    print("✅ similarity", similarity, related_page_content)
+    top_three = sorted(zip(similarities, related_page_contents), key=lambda pair: pair[0], reverse=True)[:3]
 
-    return related_page_content
+    best_documents.extend([content for _, content in top_three])
+
+    print("📌 best_documents", best_documents)
+
+    return " ".join(best_documents)
 
 
-
-
-
-def get_similarity(query_text, documents_to_search):
-    global max_similarity, best_document
+def get_similarities(query_text, documents_to_search):
     storage = 'represent supporting document for retrieval: '
 
     query_text_decorated = [
@@ -171,32 +169,32 @@ def get_similarity(query_text, documents_to_search):
          'Which document can answer the question?:' + query_text]]
 
     document_page_contents = [doc.page_content for doc in documents_to_search]
-    pprint(document_page_contents)
 
     corpus = [[storage, item] for item in document_page_contents]
 
-    print(query_text_decorated)
-    print(corpus)
-
     query_embeddings = model.encode(query_text_decorated)
 
-    # 📌 TODO: Convert this to async so we can compute similarities in parallel
+    scores_and_contents = []
+
     for document_page_content in document_page_contents:
         print("📌 document_page_content", document_page_content)
         corpus_embeddings = model.encode([document_page_content])
-        similarities = cosine_similarity(query_embeddings, corpus_embeddings)
-        similarity = similarities[0][0]
-        print("📌 similarities", similarities)
+        similarity = cosine_similarity(query_embeddings, corpus_embeddings)[0][0]
+        print("📌 similarities", similarity)
 
-        if similarity > similarity_threshold:
-            return similarity, document_page_content
+        scores_and_contents.append((similarity, document_page_content))
+        scores_and_contents.sort(key=lambda x: x[0], reverse=True)  # sort by score
 
-        if similarity > max_similarity:
-            max_similarity = similarity
-            best_document = document_page_content
+        if len(scores_and_contents) > 3:  # if we have more than 3 results
+            scores_and_contents = scores_and_contents[:3]  # keep only top 3
 
-    # If for loop not meet above, then just return a default value
-    return max_similarity, best_document
+        # if we have 3 results with high scores, we can return early
+        if len(scores_and_contents) == 3 and all(score > similarity_threshold for score, _ in scores_and_contents):
+            return [score for score, _ in scores_and_contents], [content for _, content in scores_and_contents]
+
+    # if we reach this point, we didn't find 3 results with high scores
+    # we return the top 3 results (or less if there are less than 3)
+    return [score for score, _ in scores_and_contents], [content for _, content in scores_and_contents]
 
 # 📌 TEST Execution
 # get_similar_contexts('is intel i9 better than ryzen?')
