@@ -41,7 +41,7 @@ You are authorized to use any available tools at your own discretion. No need to
 ---
 
 Available Tools:
-- SEARCH: use this to do internet search for current events or latest news. make sure to give a comprehensive search query as action input
+- SEARCH: use this to do internet search for current events or latest news. make sure to give a comprehensive search query as action input. MAKE SURE to phrase input on a question form always!
 
 ---
 
@@ -50,7 +50,9 @@ To use a tool, please use the following format:
 Thought: Do I need to use a tool? Yes
 Rationale: <think about why you need to use a tool>
 Action: <the action to take, should be one of the tools: [SEARCH]>
-Action Input: <the input to the action>
+Draft Input: <the input to the action>
+Draft Review: <think if the draft action input is the best input to have great result. Remember to make the query as specific as possible since the tool does not have the context of previous discussions>
+Action Input: <refine the action input as needed>
 Observation: <the result of the action>
 
 ---
@@ -63,8 +65,7 @@ Final Answer: <your response here, incorporate results from the tools if you hav
 """
 
 history_list = [{"role": "system",
-                 "content": role_instruction}, {"role": "user",
-                                                "content": "Hello!"}]
+                 "content": role_instruction}]
 
 
 # This also removes the \n from the history. The problem for that is readability of the promopt
@@ -92,8 +93,7 @@ def encode_decode_text(text, encoding='utf-8'):
 def clear_history_list():
     global history_list
     history_list = [{"role": "system",
-                     "content": role_instruction}, {"role": "user",
-                                                    "content": "Begin!"}]
+                     "content": role_instruction}]
 
 
 def append_and_remove_spaces_history_list(item, retain_items=7):
@@ -157,7 +157,7 @@ def askGpt(input_text, role="user"):
     start_time = time.time()
 
     if 'user' in role:
-        input_text_edited = "Answer as best you can. Question: " + input_text
+        input_text_edited = "Answer as best you can. Use a tool at your discretion! Question: " + input_text
     else:
         input_text_edited = input_text
 
@@ -203,7 +203,7 @@ def askGpt(input_text, role="user"):
             buffer += chunk_message['content']
 
             # Check if the buffer ends with a stop character, and the character before is an alphabet.
-            if re.search(r'[a-zA-Z][.,!:?]\s*$', buffer):
+            if re.search(r'[a-zA-Z][.,!:?\n]\s*$', buffer):
                 print("🗣️", buffer)  # print all messages in the buffer
                 # Add the buffer to the TTS queue
                 tts_queue.put((buffer, buffer_clear))
