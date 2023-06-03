@@ -1,15 +1,18 @@
+import os
 import re
 import threading
 from queue import Queue
 
 import inflect
-from playsound import playsound
 import time
 
 from transformers import SpeechT5Processor, SpeechT5ForTextToSpeech, SpeechT5HifiGan
 import torch
 import soundfile as sf
 from datasets import load_dataset
+
+from pydub import AudioSegment
+from pydub.playback import play
 
 # https://github.com/microsoft/SpeechT5/issues/8 more fine-tuned model
 processor = SpeechT5Processor.from_pretrained("microsoft/speecht5_tts")
@@ -18,26 +21,32 @@ vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan")
 
 # load xvector containing speaker's voice characteristics from a dataset
 embeddings_dataset = load_dataset("Matthijs/cmu-arctic-xvectors", split="validation")
-speaker_embeddings = torch.tensor(embeddings_dataset[7306]["xvector"]).unsqueeze(0)
-
-# Define a special sentinel value
-SENTINEL = 'STOP'
-
+speaker_embeddings = torch.tensor(embeddings_dataset[7533]["xvector"]).unsqueeze(0)
 
 def reword_to_make_it_easier_to_pronounce(s):
     p = inflect.engine()
     words = s.split()
     new_words = []
+
+    def number_to_word(num_str):
+        parts = num_str.split('.')
+        whole_word = p.number_to_words(parts[0])
+        decimal_word = ' point '.join([p.number_to_words(i) for i in parts[1:]]) if len(parts) > 1 else ''
+        return f"{whole_word}{decimal_word}"
+
     for word in words:
-        if word.replace('.', '').isdigit():  # Check if the word is a number
-            if '.' in word:  # Handle decimal number
-                whole, decimal = word.split('.')
-                whole_word = p.number_to_words(whole)
-                decimal_word = ' '.join([p.number_to_words(i) for i in decimal])
-                # Handle Number ranges like 20-30
-                new_words.append(f"{whole_word} point {decimal_word}")
-            else:  # Handle whole number
-                new_words.append(p.number_to_words(word))
+        clean_word = word.replace('.', '')
+        if clean_word.isdigit():  # Check if the word is a number
+            if word.endswith('.'):  # Handle ordinal numbers
+                ordinal_word = p.number_to_words(clean_word, ordinal=True)
+                new_words.append(ordinal_word)
+            else:
+                new_words.append(number_to_word(word))
+        elif re.match('^[0-9]+[A-Za-z]+$', clean_word):  # Handle labels with digits and letters
+            label_word = ' '.join([p.number_to_words(i) if i.isdigit() else i for i in clean_word])
+            new_words.append(label_word)
+        elif re.match('^[A-Za-z][0-9\.]+$', clean_word):  # Handle words starting with a letter followed by a number
+            new_words.append(f"{word[0]} {number_to_word(word[1:])}")
         elif word.isupper() and len(word) > 1:  # Check if the word is an abbreviation
             new_words.append(' '.join(list(word)) + ' ')
         else:
@@ -75,20 +84,6 @@ def generate_speech(i, chunk, queue):
     queue.put(output_file)
 
 
-# Define a function to play audio
-def play_audio(queue):
-    while True:
-        # Wait for a filename to be added to the queue
-        output_file = queue.get()
-
-        # Break the loop if the sentinel value is seen
-        if output_file == SENTINEL:
-            break
-
-        # Play the audio file
-        playsound(output_file)
-
-
 def contains_only_special_characters(string):
     pattern = r"^[^\w\s]*$"  # \w matches any word character (equal to [a-zA-Z0-9_]), \s matches any whitespace character (spaces, tabs, line breaks)
     match = re.match(pattern, string)
@@ -97,7 +92,7 @@ def contains_only_special_characters(string):
 
 # TODO: We should convert numbers to word numbers since model cannot pronounce
 
-def tts_chunk_by_chunk(input_text, callback=None, prefix="", word_limit=5):
+def tts_chunk_by_chunk(input_text, callback=None, word_limit=7):
     # Split the input text into words
     words = input_text.split()
 
@@ -125,14 +120,20 @@ def tts_chunk_by_chunk(input_text, callback=None, prefix="", word_limit=5):
     # Process each chunk
     for i, chunk in enumerate(chunks):
         chunk_ingest = reword_to_make_it_easier_to_pronounce(chunk.strip())
+
+        # Output file is based on chunk_ingest
+        # Remove special characters and replace spaces with underscores and Create the output file name
+        safe_filename = re.sub(r'\W+', '', chunk_ingest.replace(' ', '_'))
+        chunk_ingest_output_filename = safe_filename + '.wav'  # or whatever file extension you want
+
         print(f'Processing chunk {i + 1} of {len(chunks)}')
-
         print("chunk_ingest", chunk_ingest)
+        print("chunk_ingest_output_filename", chunk_ingest_output_filename)
 
-        if chunk_ingest and not contains_only_special_characters(chunk_ingest):
-            # Get the model input for this chunk
-            # sample = TTSHubInterface.get_model_input(task, chunk_ingest)
-
+        if os.path.isfile(chunk_ingest_output_filename):
+            print("🙌🙌 chunk_ingest_output_filename", chunk_ingest_output_filename)
+            audio_queue.put(chunk_ingest_output_filename)
+        elif chunk_ingest and not contains_only_special_characters(chunk_ingest):
             # Generate the speech audio for this chunk
             start_time = time.time()
             inputs = processor(text=chunk_ingest, return_tensors="pt")
@@ -141,13 +142,11 @@ def tts_chunk_by_chunk(input_text, callback=None, prefix="", word_limit=5):
 
             print(f'Text-to-speech generation for chunk {i + 1} took {end_time - start_time} seconds')
 
-            # Save the output wav file for this chunk
-            output_file = f'tts_output_{prefix}_{i + 1}.wav'
-            sf.write(output_file, speech.numpy(), samplerate=16000)
+            sf.write(chunk_ingest_output_filename, speech.numpy(), samplerate=16000)
             # sf.write(output_file, wav, rate)
 
             # Add the filename to the audio queue
-            audio_queue.put(output_file)
+            audio_queue.put(chunk_ingest_output_filename)
 
     # Call the callback function if it was provided
     if callback is not None:
@@ -165,11 +164,10 @@ def tts_worker():
     while True:
         # Wait for a chunk of text to be added to the queue
         text, callback = tts_queue.get()
-        prefix = str(time.time())
         print('🎯 text for TTS', text)
 
         # Process the text
-        tts_chunk_by_chunk(text, callback=callback, prefix=prefix)
+        tts_chunk_by_chunk(text, callback=callback)
 
         # Mark the task as done
         tts_queue.task_done()
@@ -184,7 +182,13 @@ def audio_worker():
         output_file = audio_queue.get()
 
         if output_file:
-            playsound(output_file)
+            audio = AudioSegment.from_file(output_file)
+
+            # Speed up the audio
+            fast_audio = audio.speedup(playback_speed=1.15)
+
+            # Play the audio file
+            play(fast_audio)
 
         # Mark the task as done
         audio_queue.task_done()
