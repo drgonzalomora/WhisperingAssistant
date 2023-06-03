@@ -73,15 +73,24 @@ async def extract_text(session: ClientSession, url: str, query_root_keywords=Non
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
     }
-    async with session.get(url, headers=headers) as response:
-        try:
-            html = await response.text()
-        except UnicodeDecodeError:
-            print("Error decoding response text as UTF-8. Attempting with replacement characters.")
-            raw_response = await response.read()
-            html = raw_response.decode('utf-8', 'replace')
 
-    soup = BeautifulSoup(html, 'html.parser')
+    # Create a ClientTimeout object. For example, to timeout after 10 seconds:
+    timeout = aiohttp.ClientTimeout(total=2)
+
+    try:
+        async with session.get(url, headers=headers, timeout=timeout) as response:
+            try:
+                html = await response.text()
+            except UnicodeDecodeError:
+                print("Error decoding response text as UTF-8. Attempting with replacement characters.")
+                raw_response = await response.read()
+                html = raw_response.decode('utf-8', 'replace')
+
+        soup = BeautifulSoup(html, 'html.parser')
+
+    except asyncio.TimeoutError:
+        print("The request timed out.")
+        return ""
 
     for script in soup(['script', 'style']):  # remove all javascript and stylesheet code
         script.extract()
@@ -108,7 +117,7 @@ async def extract_text(session: ClientSession, url: str, query_root_keywords=Non
 async def scrape_async(keywords, results_links):
     async with aiohttp.ClientSession() as session:
         tasks = [extract_text(session, link, query_root_keywords=keywords) for link in results_links]
-        scrape_results = await asyncio.gather(*tasks)
+        scrape_results = await asyncio.gather(*tasks, return_exceptions=True)
     return scrape_results
 
 
@@ -170,15 +179,13 @@ def get_similarities(query_text, documents_to_search):
 
     document_page_contents = [doc.page_content for doc in documents_to_search]
 
-    corpus = [[storage, item] for item in document_page_contents]
-
     query_embeddings = model.encode(query_text_decorated)
 
     scores_and_contents = []
 
     for document_page_content in document_page_contents:
         print("📌 document_page_content", document_page_content)
-        corpus_embeddings = model.encode([document_page_content])
+        corpus_embeddings = model.encode([storage, document_page_content])
         similarity = cosine_similarity(query_embeddings, corpus_embeddings)[0][0]
         print("📌 similarities", similarity)
 
