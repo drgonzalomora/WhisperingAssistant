@@ -51,7 +51,7 @@ Thought: Do I need to use a tool? Yes
 Rationale: <think about why you need to use a tool>
 Action: <the action to take, should be one of the tools: [SEARCH]>
 Draft Input: <the input to the action>
-Draft Review: <think if the draft action input is the best input to have great result. Remember to make the query as specific as possible since the tool does not have the context of previous discussions>
+Draft Review: <think if the draft action input is the best input. Remember to make the action input as specific as possible since the tool does not have the context of previous discussions>
 Action Input: <refine the action input as needed>
 Observation: <the result of the action>
 
@@ -263,7 +263,12 @@ def should_end_conversation(input_string_lower):
     print("should_end_conversation", input_string_lower)
 
     end_word_patterns = [r'\bend\b', r'\bconversation\b', r'\bthanks\b', r'\bbye\b']
-    return any(re.search(pattern, input_string_lower, re.IGNORECASE) for pattern in end_word_patterns)
+    matches = [re.search(pattern, input_string_lower, re.IGNORECASE) for pattern in end_word_patterns]
+
+    # count the matches (only consider matched patterns, ignore None)
+    match_count = sum(1 for match in matches if match is not None)
+
+    return match_count >= 2  # return True only if at least two matches
 
 
 def process_input(input_queue_local):
