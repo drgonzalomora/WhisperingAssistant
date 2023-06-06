@@ -21,7 +21,7 @@ engine = Google()
 nltk.download('punkt')
 nltk.download('stopwords')
 
-similarity_threshold = 0.93
+similarity_threshold = 0.92
 
 
 # If the word is longer than 5 characters, we should include the whole word instead of cutting it.
@@ -108,7 +108,7 @@ async def extract_text(session: ClientSession, url: str, query_root_keywords=Non
         chunk for chunk in chunks if chunk and (8 < len(chunk.split()) < 200 or len(chunk.split()) > 400)).split(
         '\n')
 
-    text = filter_with_adjacent_items(text, query_root_keywords=query_root_keywords, num_adjacent=5)
+    text = filter_with_adjacent_items(text, query_root_keywords=query_root_keywords, num_adjacent=3)
     text = remove_fuzzy_duplicates(text)
 
     return text
@@ -144,14 +144,14 @@ def get_similar_contexts(query_text):
     similarities, related_page_contents = get_similarities(query_text, search_engine_texts_documents)
 
     # Here we sort the results by their similarity and select the top 3
-    top_three = sorted(zip(similarities, related_page_contents), key=lambda pair: pair[0], reverse=True)[:3]
+    top_three = sorted(zip(similarities, related_page_contents), key=lambda pair: pair[0], reverse=True)[:2]
 
     if all(similarity > similarity_threshold for similarity, _ in top_three):
         best_documents.extend([content for _, content in top_three])
         return " ".join(best_documents)
 
     # If the search result texts do not have enough context, we need to scrape results
-    search_engine_links = search_engine_results.links()[:3]
+    search_engine_links = search_engine_results.links()[:5]
     scrape_async_results = asyncio.run(scrape_async(keywords, search_engine_links))
 
     flattened_scrape_async_results = list(itertools.chain(*scrape_async_results))
@@ -161,21 +161,19 @@ def get_similar_contexts(query_text):
 
     similarities, related_page_contents = get_similarities(query_text, scrape_async_results_documents)
 
-    top_three = sorted(zip(similarities, related_page_contents), key=lambda pair: pair[0], reverse=True)[:3]
+    top_three = sorted(zip(similarities, related_page_contents), key=lambda pair: pair[0], reverse=True)[:2]
 
     best_documents.extend([content for _, content in top_three])
 
     print("📌 best_documents", best_documents)
 
-    return " ".join(best_documents)
+    return search_engine_texts + " ".join(best_documents)
 
 
 def get_similarities(query_text, documents_to_search):
-    storage = 'represent supporting document for retrieval: '
-
     query_text_decorated = [
-        ['represent question for retrieving supporting document: ',
-         'Which document can answer the question?:' + query_text]]
+        ['represent question for retrieving relevant documents: ',
+         'Can this document answer this question?: ' + '"' + query_text + '"']]
 
     document_page_contents = [doc.page_content for doc in documents_to_search]
 
@@ -183,20 +181,21 @@ def get_similarities(query_text, documents_to_search):
 
     scores_and_contents = []
 
+    # Getting higher similarity if storage instruction is not added: storage = 'represent document for retrieval: '
     for document_page_content in document_page_contents:
         print("📌 document_page_content", document_page_content)
-        corpus_embeddings = model.encode([storage, document_page_content])
+        corpus_embeddings = model.encode([document_page_content])
         similarity = cosine_similarity(query_embeddings, corpus_embeddings)[0][0]
         print("📌 similarities", similarity)
 
         scores_and_contents.append((similarity, document_page_content))
         scores_and_contents.sort(key=lambda x: x[0], reverse=True)  # sort by score
 
-        if len(scores_and_contents) > 3:  # if we have more than 3 results
-            scores_and_contents = scores_and_contents[:3]  # keep only top 3
+        if len(scores_and_contents) > 2:  # if we have more than 3 results
+            scores_and_contents = scores_and_contents[:2]  # keep only top 3
 
         # if we have 3 results with high scores, we can return early
-        if len(scores_and_contents) == 3 and all(score > similarity_threshold for score, _ in scores_and_contents):
+        if len(scores_and_contents) == 2 and all(score > similarity_threshold for score, _ in scores_and_contents):
             return [score for score, _ in scores_and_contents], [content for _, content in scores_and_contents]
 
     # if we reach this point, we didn't find 3 results with high scores

@@ -23,6 +23,7 @@ vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan")
 embeddings_dataset = load_dataset("Matthijs/cmu-arctic-xvectors", split="validation")
 speaker_embeddings = torch.tensor(embeddings_dataset[7533]["xvector"]).unsqueeze(0)
 
+
 def reword_to_make_it_easier_to_pronounce(s):
     p = inflect.engine()
     words = s.split()
@@ -38,13 +39,21 @@ def reword_to_make_it_easier_to_pronounce(s):
         clean_word = word.replace('.', '')
         if clean_word.isdigit():  # Check if the word is a number
             if word.endswith('.'):  # Handle ordinal numbers
-                ordinal_word = p.number_to_words(clean_word, ordinal=True)
+                ordinal_word = p.ordinal(clean_word)  # Use ordinal function
                 new_words.append(ordinal_word)
             else:
                 new_words.append(number_to_word(word))
         elif re.match('^[0-9]+[A-Za-z]+$', clean_word):  # Handle labels with digits and letters
             label_word = ' '.join([p.number_to_words(i) if i.isdigit() else i for i in clean_word])
             new_words.append(label_word)
+        elif re.match('^\$[0-9\.]+$', word):  # Handle dollar amounts
+            dollar_part, cent_part = word[1:].split('.')
+            dollar_word = p.number_to_words(dollar_part) + ' dollars'
+            cent_word = ' and ' + p.number_to_words(cent_part) + ' cents' if int(cent_part) > 0 else ''
+            new_words.append(dollar_word + cent_word)
+        elif re.match('^[0-9]+C$', word):  # Handle degrees Celsius
+            temp_word = p.number_to_words(word[:-1]) + ' degrees Celsius'
+            new_words.append(temp_word)
         elif re.match('^[A-Za-z][0-9\.]+$', clean_word):  # Handle words starting with a letter followed by a number
             new_words.append(f"{word[0]} {number_to_word(word[1:])}")
         elif word.isupper() and len(word) > 1:  # Check if the word is an abbreviation
@@ -185,7 +194,7 @@ def audio_worker():
             audio = AudioSegment.from_file(output_file)
 
             # Speed up the audio
-            fast_audio = audio.speedup(playback_speed=1.15)
+            fast_audio = audio.speedup(playback_speed=1.11)
 
             # Play the audio file
             play(fast_audio)

@@ -291,6 +291,7 @@ def process_input(input_queue_local):
         print(f'✅ Task Done: {input_string}')
 
         if not end_conversation:
+            time.sleep(0.5)
             requests.get("http://127.0.0.1:6969")
 
         if end_conversation:
