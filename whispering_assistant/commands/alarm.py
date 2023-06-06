@@ -29,7 +29,7 @@ def extract_first_alarm_minutes(text):
 
 class Alarm(BaseCommand):
     trigger = "alarm"
-    command_type = command_types['ONE_SHOT']
+    command_type = command_types['CHAINABLE_SHORT']
     keywords = {
         "action": ["set"],
         "subject": ["alarm", "timer"]
