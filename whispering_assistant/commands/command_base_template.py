@@ -41,15 +41,15 @@ class BaseCommand(ABC):
     """Base command interface for all command plugins."""
 
     # Define a class attribute for the trigger
-    trigger = None  # string or "fallback"
-    command_type = None  # command_types
+    trigger = ""  # string or "fallback"
+    command_type = ""  # command_types
     keywords = {
         "action": [""],
         "subject": [""]
     }
 
     def parameter_checker(self, raw_text, *args, **kwargs):
-        pass
+        return 'EMPTY'
 
     @abstractmethod
     def run(self, text_parameter, raw_text, command_intent=None, *args, **kwargs):
