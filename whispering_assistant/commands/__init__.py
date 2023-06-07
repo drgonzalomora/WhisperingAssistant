@@ -93,7 +93,7 @@ def check_strings(text, keywords, raw_text=""):
     return (action_found and subject_found and action_index < subject_index), remove_special_chars_regex(text_parameter)
 
 
-def execute_plugin_by_keyword(text, run_command=True, skip_fallback=False, *args, **kwargs):
+def execute_plugin_by_keyword(text, run_command=True, skip_fallback=False, intent_sensitivity = 0,*args, **kwargs):
     global prev_text_parameter
     found = False
     plugin_used = None
@@ -110,7 +110,7 @@ def execute_plugin_by_keyword(text, run_command=True, skip_fallback=False, *args
         words_array = [word.strip() for word in re.split(r'[^\w\s]+|(?<=\s)', result_text_lower) if word.strip()]
         words_cleaned = ' '.join(words_array)
 
-        detected_intent, detected_intent_details = get_intent_from_text(result_text_lower)
+        detected_intent, detected_intent_details = get_intent_from_text(result_text_lower, intent_sensitivity=intent_sensitivity)
 
         print("detected_intent", detected_intent)
         print("detected_intent_details", detected_intent_details)
@@ -119,10 +119,13 @@ def execute_plugin_by_keyword(text, run_command=True, skip_fallback=False, *args
             if plugin.trigger.lower() != FALL_BACK_COMMAND:
 
                 if detected_intent and detected_intent.lower() == plugin.trigger.lower():
+                    print(type(plugin))
                     print("found plugin using intent", detected_intent)
                     match, text_parameter = check_strings(words_cleaned, plugin.keywords, raw_text=result_text_lower)
                     print("text_parameter", text_parameter)
                     print("result_text_lower", result_text_lower)
+                    parameter_checker_result = plugin.parameter_checker(raw_text=result_text_lower)
+                    print("🤔 parameter_checker_result", parameter_checker_result)
 
                     if hasattr(plugin, 'required_keywords'):
                         if not any(
@@ -130,9 +133,8 @@ def execute_plugin_by_keyword(text, run_command=True, skip_fallback=False, *args
                             print('missing required keywords for plugin', plugin.trigger.lower())
                             continue
 
-                    if hasattr(plugin, 'parameter_checker'):
-                        if not plugin.parameter_checker(raw_text=result_text_lower):
-                            continue
+                    if parameter_checker_result is None:
+                        continue
 
                     plugin_used = plugin
 

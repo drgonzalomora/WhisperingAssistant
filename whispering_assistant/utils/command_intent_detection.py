@@ -68,7 +68,7 @@ def generate_index_for_intent_detection():
     generate_index_for_intent_detection_is_running = False
 
 
-def get_intent_from_text(command_text):
+def get_intent_from_text(command_text, intent_sensitivity=0):
     global faiss_index, save_faiss_index
     global intent_list
     intent_list = parse_plugin_main_commands_desc()
@@ -95,10 +95,10 @@ def get_intent_from_text(command_text):
             top_result_filtered = result
             break
 
-        if '_sub' in result['id_text'] and result['similarity'] > 0.91:
+        if '_sub' in result['id_text'] and result['similarity'] > (0.91 + intent_sensitivity):
             top_result_sub_filtered = result
 
-        if '_main' in result['id_text'] and result['similarity'] > 0.90:
+        if '_main' in result['id_text'] and result['similarity'] > (0.90 + intent_sensitivity):
             top_result_main_filtered = result
 
     if not top_result_filtered and top_result_main_filtered:

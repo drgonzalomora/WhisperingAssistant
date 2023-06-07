@@ -113,7 +113,7 @@ def check_transcript_for_short_commands(stream, audio):
     context_prompt = generate_prompts_for_short_commands()
     result_text = save_file_then_transcribe(frames=frames + frames, model=model, audio=audio,
                                             context_prompt=context_prompt)
-    plugin_used = execute_plugin_by_keyword(result_text, run_command=False, skip_fallback=True)
+    plugin_used = execute_plugin_by_keyword(result_text, run_command=False, skip_fallback=True, intent_sensitivity=0.8)
 
     command_chainable = False
     skip_next_transcription = False
@@ -126,7 +126,7 @@ def check_transcript_for_short_commands(stream, audio):
     print("⚡️command_type", command_type)
 
     if command_type == command_types['ONE_SHOT']:
-        execute_plugin_by_keyword(result_text, run_command=True, skip_fallback=True)
+        execute_plugin_by_keyword(result_text, run_command=True, skip_fallback=True, intent_sensitivity=0.8)
         skip_next_transcription = True
     elif command_type == command_types['CHAINABLE_SHORT']:
         next_transcription_max_time = 1
