@@ -22,15 +22,14 @@ class SetVolume(BaseCommand):
 
     def run(self, text_parameter, raw_text, *args, **kwargs):
         raw_text = raw_text.lower()
-        pattern = r'(\d+(\.\d{1,2})?)\s*%'
+        pattern = r'(\d+(\.\d{1,2})?)\s*(%|percent)'
 
         # Find percentage value in input string
         match = re.search(pattern, raw_text)
-        print(match)
 
-        # Extract percentage value from match object and remove % sign
+        # Extract percentage value from match object and remove % sign or 'percent'
         if match:
-            percentage = match.group(1).replace('%', '')
+            percentage = match.group(1)
             print("percentage", float(percentage))
             set_volume(float(percentage))
 
