@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from functools import wraps
 
 command_types_names = [
     'ONE_SHOT',
@@ -18,6 +19,24 @@ for command_type in command_types_names:
 FALL_BACK_COMMAND = "FALL_BACK_COMMAND"
 
 
+def requires_attributes(attrs):
+    def decorator(cls):
+        orig_init = cls.__init__
+
+        @wraps(cls.__init__)
+        def new_init(self, *args, **kwargs):
+            for attr in attrs:
+                if getattr(self, attr, None) is None:
+                    raise NotImplementedError(f"Class {cls.__name__} must define the {attr} attribute.")
+            orig_init(self, *args, **kwargs)
+
+        cls.__init__ = new_init
+        return cls
+
+    return decorator
+
+
+@requires_attributes(['trigger', 'command_type'])
 class BaseCommand(ABC):
     """Base command interface for all command plugins."""
 
@@ -28,6 +47,9 @@ class BaseCommand(ABC):
         "action": [""],
         "subject": [""]
     }
+
+    def parameter_checker(self, raw_text, *args, **kwargs):
+        pass
 
     @abstractmethod
     def run(self, text_parameter, raw_text, command_intent=None, *args, **kwargs):
