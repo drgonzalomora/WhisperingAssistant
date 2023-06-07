@@ -38,6 +38,14 @@ class Alarm(BaseCommand):
         "use the following tool for setting and stopping alarms and timers. similar commands: set timer for 2 minutes; set alarm for 5 minutes"
     ]
 
+    def parameter_checker(self, raw_text, *args, **kwargs):
+        alarm_input = extract_first_alarm_minutes(raw_text)
+
+        if alarm_input:
+            return alarm_input
+
+        return None
+
     def run(self, text_parameter, raw_text, *args, **kwargs):
         raw_text = raw_text.lower()
         alarm_minutes = extract_first_alarm_minutes(raw_text)
