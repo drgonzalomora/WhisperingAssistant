@@ -1,4 +1,6 @@
 import subprocess
+
+from word2number import w2n
 import re
 
 from whispering_assistant.commands.command_base_template import BaseCommand, command_types
@@ -8,21 +10,25 @@ from whispering_assistant.utils.tts_test import tts_queue
 def extract_first_alarm_minutes(text):
     # pattern to match hours, minutes, and seconds
     patterns = [
-        (r'(\d+)\s*(minutes|min)', 1),
-        (r'(\d+)\s*(hours|hour|hrs|hr)', 60),
-        (r'(\d+)\s*(seconds|second|secs|sec)', 1 / 60),
-        (r'one\s*(minute|min)', 1),
-        (r'one\s*(hour|hr)', 60),
-        (r'one\s*(second|sec)', 1 / 60)
+        (r'(\w+)\s*(minutes|min)', 1),
+        (r'(\w+)\s*(hours|hour|hrs|hr)', 60),
+        (r'(\w+)\s*(seconds|second|secs|sec)', 1 / 60)
     ]
 
     for pattern, multiplier in patterns:
         match = re.search(pattern, text, re.IGNORECASE)
         if match:
-            if isinstance(match.group(1), str) and match.group(1).isnumeric():
-                return int(match.group(1)) * multiplier
-            else:
-                return multiplier
+            match_group = match.group(1).lower()
+            try:
+                # Try to convert word number to numeric number
+                numeric_val = w2n.word_to_num(match_group)
+            except ValueError:
+                # If ValueError is raised, the match is not a word number, so we check if it's a numeric number
+                if match_group.isnumeric():
+                    numeric_val = int(match_group)
+                else:
+                    continue  # if it's neither, we move on to the next pattern
+            return numeric_val * multiplier
 
     return None
 
@@ -40,6 +46,9 @@ class Alarm(BaseCommand):
 
     def parameter_checker(self, raw_text, *args, **kwargs):
         alarm_input = extract_first_alarm_minutes(raw_text)
+
+        if 'stop' in raw_text:
+            return 'stop'
 
         if alarm_input:
             return alarm_input
