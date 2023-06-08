@@ -45,3 +45,29 @@ def profile(func):
         return result
 
     return wrapper
+
+
+class TimerCheck:
+    def __init__(self):
+        self.start_time = None
+        self.logs = []
+
+    def start(self):
+        self.start_time = time.time()
+
+    def stop(self, description):
+        if self.start_time is not None:
+            elapsed_time = time.time() - self.start_time
+            self.logs.append((description, elapsed_time))
+            self.start_time = None
+        else:
+            print("Timer is not started yet.")
+
+    def output(self):
+        for description, elapsed in self.logs:
+            if elapsed > 0.1:
+                print(f"🎯 {description}: {elapsed} seconds")
+            else:
+                print(f"{description}: {elapsed} seconds")
+
+        self.logs = []

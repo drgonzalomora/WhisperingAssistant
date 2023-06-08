@@ -13,7 +13,7 @@ from whispering_assistant.configs.config import AUDIO_FILES_DIR, CHANNELS, RATE,
 from whispering_assistant.states_manager import global_var_state
 from whispering_assistant.states_manager.window_manager_messages import message_queue
 from whispering_assistant.utils.audio import play_sound, SoundHandler
-from whispering_assistant.utils.performance import print_time_profile
+from whispering_assistant.utils.performance import print_time_profile, TimerCheck
 from whispering_assistant.utils.prompt import get_prompt_cache, generate_related_keywords_prompt
 from whispering_assistant.utils.volumes import get_volume, set_volume, set_microphone_volume
 from whispering_assistant.utils.window_dialogs import activate_window, get_active_window_id
@@ -94,27 +94,41 @@ def save_file_then_transcribe(frames, model, audio, context_prompt, transcriptio
     return result_text
 
 
+# TODO: Based on the findings, what we can improve here is the checking of the command prompts because this is being done twice,
+#  first on the short command and next is for the actual transcription.
+short_transcription_timer_check = TimerCheck()
+
+
 def check_transcript_for_short_commands(stream, audio):
     model = model_tiny
 
+    short_transcription_timer_check.start()
     print("Showing transcribing window...")
     max_time_check_short_command = 2.5
     frames = []
     max_it = int(RATE / CHUNK * max_time_check_short_command)
-
     message_queue.put(('create_avatar', 'set_content', "✅ Recording", "✅ Recording..."))
+    short_transcription_timer_check.stop("showing avatar")
 
+    short_transcription_timer_check.start()
     for i in range(0, max_it):
         data = stream.read(CHUNK)
         frames.append(data)
+    short_transcription_timer_check.stop("recording")
 
     # 📌 TODO: Add a checking here to check the number of silences in the input and use that as the basis if we need to skip the transcription altogether.
 
+    short_transcription_timer_check.start()
     context_prompt = generate_prompts_for_short_commands()
     result_text = save_file_then_transcribe(frames=frames + frames, model=model, audio=audio,
                                             context_prompt=context_prompt)
-    plugin_used = execute_plugin_by_keyword(result_text, run_command=False, skip_fallback=True, intent_sensitivity=0.8)
+    short_transcription_timer_check.stop("first pass transcript")
 
+    short_transcription_timer_check.start()
+    plugin_used = execute_plugin_by_keyword(result_text, run_command=False, skip_fallback=True, intent_sensitivity=0.8)
+    short_transcription_timer_check.stop("check command props")
+
+    short_transcription_timer_check.start()
     command_chainable = False
     skip_next_transcription = False
     next_transcription_max_time = 60
@@ -135,40 +149,55 @@ def check_transcript_for_short_commands(stream, audio):
         next_transcription_max_time = 60
         next_transcription_cut_off_factor = 2
 
+    short_transcription_timer_check.stop("set parameters based on command type")
+
+    short_transcription_timer_check.output()
     return frames, command_chainable, skip_next_transcription, next_transcription_max_time, next_transcription_cut_off_factor
 
 
+# TODO: Based on the findings, what we can improve here is the second pass for transcription.
+#  Maybe we can reduce this one further because we're just using this to get the keywords to pass on the actual transcription.
+#  So this can be less accurate, but yeah. And next also, we can further improve the performance of
+#  the checking of plug-in to run based on the transcript. Currently it takes around 300 milliseconds.
+#  If we can bring that down to 100 milliseconds, then I think that will be the best. That would be like the best.
+transcription_timer_check = TimerCheck()
+
+
 def start_mic_to_transcription(model=None):
-    start_time = time.time()
+    print('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥 Starting Transcription')
+
+    transcription_timer_check.start()
     message_queue.put(('create_avatar', 'show'))
     message_queue.put(('create_avatar', 'set_content', "❌ Starting", "❌ Starting..."))
-    print_time_profile(start_time, "opening transcribing window")
+    transcription_timer_check.stop("opening transcribing window")
 
-    start_time = time.time()
+    transcription_timer_check.start()
     global_var_state.is_transcribing = "GO"
     global_var_state.recently_transcribed = True
-    print_time_profile(start_time, "set global var")
+    transcription_timer_check.stop("set global var")
 
-    start_time = time.time()
+    transcription_timer_check.start()
     prev_volume = get_volume()
-    print_time_profile(start_time, "get volume")
+    transcription_timer_check.stop("get volume")
 
-    start_time = time.time()
+    transcription_timer_check.start()
     sound_handler.play_sound(
         "/home/joshua/extrafiles/projects/WhisperingAssistant/whispering_assistant/assets/sound/whistle.mp3")
-    print_time_profile(start_time, "play sound cue")
+    transcription_timer_check.stop("play sound cue")
 
-    start_time = time.time()
+    transcription_timer_check.start()
     audio = pyaudio.PyAudio()
     stream = audio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
     set_microphone_volume('alsa_input', MIC_INPUT_GAIN)  # 50% volume
-    print_time_profile(start_time, "open mic stream")
+    transcription_timer_check.stop("open mic stream")
 
+    transcription_timer_check.start()
     frames, \
         chainable_commands, \
         skip_next_transcription, \
         next_transcription_max_time, \
         next_transcription_cut_off_factor = check_transcript_for_short_commands(stream, audio=audio)
+    transcription_timer_check.stop("first pass short transcription")
 
     silence_counter = 0
     silence_reset_counter = 0
@@ -182,6 +211,8 @@ def start_mic_to_transcription(model=None):
     MAX_SCALING = 2
 
     if not skip_next_transcription:
+
+        transcription_timer_check.start()
         for i in range(0, max_it):
             # Add an offset since there was a first transcription done for 3 seconds
             data = stream.read(CHUNK * 2)
@@ -225,47 +256,58 @@ def start_mic_to_transcription(model=None):
                 print("Stopped recording due to seconds of consecutive silence.")
                 break
 
+        transcription_timer_check.stop("finished recording")
+
+    transcription_timer_check.start()
     print("Terminate audio...")
     start_time = time.time()
     set_volume(prev_volume)
     stream.stop_stream()
     stream.close()
     audio.terminate()
-    print_time_profile(start_time, "setting vol")
+    transcription_timer_check.stop("terminating stream and setting vol")
 
+    transcription_timer_check.start()
     print("Closing transcribing window...")
     global_var_state.is_transcribing = "STOP"
     message_queue.put(('create_avatar', 'hide'))
     print("Processing audio...")
+    transcription_timer_check.stop("closing avatar window")
 
     if not skip_next_transcription:
+        transcription_timer_check.start()
         context_prompt = get_prompt_cache()
         frames_for_processing = frames
+        transcription_timer_check.stop("get prompt cache")
 
         print("🎤len(frames)", len(frames))
         if len(frames) < 40:
             frames_for_processing = frames + frames
 
-        # Create a second transcription where it uses the prompt for the related keywords.
+        transcription_timer_check.start()
         prev_result_text = save_file_then_transcribe(frames=frames_for_processing, model=model, audio=audio,
                                                      context_prompt=context_prompt, use_model_tiny=True)
         result_text = prev_result_text
+        transcription_timer_check.stop("second pass transcription")
 
         if len(frames) > 30:
+            transcription_timer_check.start()
             context_prompt_related_keywords = generate_related_keywords_prompt(prev_result_text)
             result_text = save_file_then_transcribe(frames=frames, model=model, audio=audio,
                                                     context_prompt=context_prompt_related_keywords)
+            transcription_timer_check.stop("third pass transcription")
 
+        transcription_timer_check.start()
         print("💡 result_text comparison")
         print("result_text prev:", prev_result_text)
         print("result_text after:", result_text)
-
         print("🕵️ Analyzing transcription what command to run")
-        start_time = time.time()
         execute_plugin_by_keyword(result_text)
-        print_time_profile(start_time, "run command")
+        transcription_timer_check.stop("check what plugin to run")
 
     global_var_state.recently_transcribed = False
+    print('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥 Ending Transcription')
+    transcription_timer_check.output()
     return
 
 
