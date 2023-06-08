@@ -19,31 +19,35 @@ def fuzzy_keyword_sequence_matching(input_text, keyword_string, similarity_thres
 
     for i, keyword in enumerate(keywords):
         word_similarities = [(j, levenshtein_similarity(keyword, word)) for j, word in enumerate(input_text)]
-        max_similarity_index, max_similarity = max(word_similarities, key=lambda x: x[1])
-        positions.append(max_similarity_index)
-        max_similarities.append(max_similarity)
 
-    # Convert to a numpy array for convenience
-    max_similarities_np = np.array(max_similarities)
+        if word_similarities:
+            max_similarity_index, max_similarity = max(word_similarities, key=lambda x: x[1])
+            positions.append(max_similarity_index)
+            max_similarities.append(max_similarity)
 
-    # Compute the minimum similarity
-    min_similarity = np.min(max_similarities_np)
-    print(f"Minimum similarity: {min_similarity}")
+    if max_similarities:
 
-    # Compute the mean similarity
-    mean_similarity = np.mean(max_similarities_np)
-    print(f"Mean similarity: {mean_similarity}")
+        # Convert to a numpy array for convenience
+        max_similarities_np = np.array(max_similarities)
 
-    print("positions", positions)
+        # Compute the minimum similarity
+        min_similarity = np.min(max_similarities_np)
+        print(f"Minimum similarity: {min_similarity}")
 
-    # Check if the positions of the keywords in the text match the expected positions
-    positions_match = all(abs(i - pos) <= position_threshold for i, pos in enumerate(positions))
-    print(f"Positions match: {positions_match}")
+        # Compute the mean similarity
+        mean_similarity = np.mean(max_similarities_np)
+        print(f"Mean similarity: {mean_similarity}")
 
-    if mean_similarity > similarity_threshold and positions == sorted(positions) and positions_match:
-        return True, mean_similarity
+        print("positions", positions)
 
-    return False, mean_similarity
+        # Check if the positions of the keywords in the text match the expected positions
+        positions_match = all(abs(i - pos) <= position_threshold for i, pos in enumerate(positions))
+        print(f"Positions match: {positions_match}")
+
+        if mean_similarity > similarity_threshold and positions == sorted(positions) and positions_match:
+            return True, mean_similarity
+
+    return False, 0
 
 
 def command_keyword_matching_top_match(input_text):
