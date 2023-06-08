@@ -1,5 +1,15 @@
 # ⚠️ use this to do some testing for plugin execution based on the transcript created.
 
+
+# v 🚥🚥🚥
+# import whispering_assistant.commands
+# from whispering_assistant.utils.command_keyword_matching import command_keyword_matching_top_match
+#
+# command_keyword_matching_top_match('open by charm')
+# command_keyword_matching_top_match('charm open by')
+# command_keyword_matching_top_match('can you open pycharm')
+# command_keyword_matching_top_match('you open pycharm')
+
 # v 🚥🚥🚥
 # import inflect
 

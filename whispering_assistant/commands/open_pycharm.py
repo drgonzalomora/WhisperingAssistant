@@ -45,6 +45,7 @@ class OpenPycharm(BaseCommand):
         "use the following tool for opening projects with pycharm for code development. usually start with the phrases: 'open pycharm'"
     ]
     required_keywords = ['pycharm']
+    keyword_match = 'open pycharm'
     examples = [
         'open py charm for TOPIC',
         'open pycharm TOPIC',

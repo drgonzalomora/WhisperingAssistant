@@ -9,6 +9,7 @@ from whispering_assistant.configs.config import load_os_display_env
 from whispering_assistant.states_manager import global_var_state
 from whispering_assistant.utils.clipboard_manager import ClipboardHandler
 from whispering_assistant.utils.command_intent_detection import get_intent_from_text
+from whispering_assistant.utils.command_keyword_matching import command_keyword_matching_top_match
 from whispering_assistant.utils.commands_plugin_state import COMMAND_PLUGINS
 from whispering_assistant.utils.open_ai_test import input_queue
 
@@ -93,59 +94,77 @@ def check_strings(text, keywords, raw_text=""):
     return (action_found and subject_found and action_index < subject_index), remove_special_chars_regex(text_parameter)
 
 
-def execute_plugin_by_keyword(text, run_command=True, skip_fallback=False, intent_sensitivity = 0,*args, **kwargs):
+def execute_plugin_by_keyword(text, run_command=True, skip_fallback=False, intent_sensitivity=0, *args, **kwargs):
     global prev_text_parameter
     found = False
     plugin_used = None
     text_for_ingestion = text
 
-    clipboard_handler.handle_clipboard(text_for_ingestion.lstrip())
+    clipboard_handler.handle_clipboard(text_for_ingestion.strip())
 
     if global_var_state.continuous_conversation_mode:
         if run_command and not skip_fallback:
             input_queue.put(text)
 
     else:
-        result_text_lower = text_for_ingestion.lower().lstrip()
+        result_text_lower = text_for_ingestion.lower().strip()
         words_array = [word.strip() for word in re.split(r'[^\w\s]+|(?<=\s)', result_text_lower) if word.strip()]
         words_cleaned = ' '.join(words_array)
+        detected_intent = None
+        detected_intent_details = None
+        text_parameter = None
+        plugin_to_use = None
 
-        detected_intent, detected_intent_details = get_intent_from_text(result_text_lower, intent_sensitivity=intent_sensitivity)
+        # KW matching first
+        kw_match_top_result = command_keyword_matching_top_match(' '.join(words_array[:5]))
+        print("🎤🎤kw_match_top_result", kw_match_top_result)
 
-        print("detected_intent", detected_intent)
-        print("detected_intent_details", detected_intent_details)
+        # Then intent analysis
+        if not kw_match_top_result:
+            detected_intent, detected_intent_details = get_intent_from_text(result_text_lower,
+                                                                            intent_sensitivity=intent_sensitivity)
+            print("detected_intent", detected_intent)
+            print("detected_intent_details", detected_intent_details)
 
         for plugin in COMMAND_PLUGINS.values():
             if plugin.trigger.lower() != FALL_BACK_COMMAND:
 
-                if detected_intent and detected_intent.lower() == plugin.trigger.lower():
-                    print(type(plugin))
-                    print("found plugin using intent", detected_intent)
-                    match, text_parameter = check_strings(words_cleaned, plugin.keywords, raw_text=result_text_lower)
-                    print("text_parameter", text_parameter)
-                    print("result_text_lower", result_text_lower)
-                    parameter_checker_result = plugin.parameter_checker(raw_text=result_text_lower)
-                    print("🤔 parameter_checker_result", parameter_checker_result)
+                if kw_match_top_result:
+                    plugin_to_use = kw_match_top_result
+                else:
+                    if detected_intent and detected_intent.lower() == plugin.trigger.lower():
+                        print(type(plugin))
+                        print("found plugin using intent", detected_intent)
+                        print("text_parameter", text_parameter)
+                        print("result_text_lower", result_text_lower)
+                        parameter_checker_result = plugin.parameter_checker(raw_text=result_text_lower)
+                        print("🤔 parameter_checker_result", parameter_checker_result)
 
-                    if hasattr(plugin, 'required_keywords'):
-                        if not any(
-                                required_keyword in result_text_lower for required_keyword in plugin.required_keywords):
-                            print('missing required keywords for plugin', plugin.trigger.lower())
+                        if hasattr(plugin, 'required_keywords'):
+                            if not any(
+                                    required_keyword in result_text_lower for required_keyword in
+                                    plugin.required_keywords):
+                                print('missing required keywords for plugin', plugin.trigger.lower())
+                                continue
+
+                        if parameter_checker_result is None:
                             continue
 
-                    if parameter_checker_result is None:
-                        continue
+                        plugin_used = plugin
+                        plugin_to_use = plugin
 
-                    plugin_used = plugin
-
-                    if run_command:
-                        print('running plugin', plugin.trigger.lower())
-                        prev_text_parameter = text_parameter
-                        plugin.run(*args, text_parameter=text_parameter, raw_text=text_for_ingestion,
-                                   command_intent=detected_intent_details, **kwargs)
-
-                    found = True
+                if plugin_to_use:
+                    match, text_parameter = check_strings(words_cleaned, plugin_to_use.keywords,
+                                                          raw_text=result_text_lower)
                     break
+
+        if plugin_to_use:
+            found = True
+            if run_command:
+                print('running plugin', plugin_to_use.trigger.lower())
+                prev_text_parameter = text_parameter
+                plugin_to_use.run(*args, text_parameter=text_parameter, raw_text=text_for_ingestion,
+                                  command_intent=detected_intent_details, **kwargs)
 
         if not found:
             print(f"No plugin found for text: {text_for_ingestion}")

@@ -13,6 +13,7 @@ class OpenApp(BaseCommand):
     description = [
         "use the following tool for opening computer or laptop applications. example commands are: open spotify, open firefox, open gimp"
     ]
+    keyword_match = 'open'
     examples = [
         'open firefox',
         'open gimp',
