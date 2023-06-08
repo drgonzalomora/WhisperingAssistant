@@ -11,6 +11,7 @@ class SetVolume(BaseCommand):
         "action": ["change", "set", "update"],
         "subject": ["volume"]
     }
+    keyword_match = 'set volume'
     description = [
         "use the following tool for adjusting the volume. example: 'set volume to 80%'"
     ]

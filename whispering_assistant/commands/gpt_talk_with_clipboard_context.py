@@ -145,6 +145,7 @@ class TalkGPTWithClipboardContext(BaseCommand):
         "action": ["relation", "clipboard", "context", "question"],
         "subject": ["nora", "ruby"]
     }
+    keyword_match = 'send relation nora'
     description = [
         "use the following tool for asking requests to nora with context or relation. command usually starts with 'send relation to nora' or 'send context to nora'"
     ]

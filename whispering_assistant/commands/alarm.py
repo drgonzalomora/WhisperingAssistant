@@ -40,6 +40,7 @@ class Alarm(BaseCommand):
         "action": ["set"],
         "subject": ["alarm", "timer"]
     }
+    keyword_match = 'set timer'
     description = [
         "use the following tool for setting and stopping alarms and timers. similar commands: set timer for 2 minutes; set alarm for 5 minutes"
     ]

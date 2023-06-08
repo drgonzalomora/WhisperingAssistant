@@ -42,6 +42,7 @@ class TogglRecordTimeCommand(BaseCommand):
         "action": ["record"],
         "subject": ["time"]
     }
+    keyword_match = 'record time'
     description = [
         "use the following tool for recording time log. usually starts with the phrases: 'record time' or 'record my time'"
     ]

@@ -20,6 +20,7 @@ class AddTask(BaseCommand):
     description = [
         "use the following tool for creating new tasks, notes or reminders. usually starts with 'create a task'"
     ]
+    keyword_match = 'create reminder'
     examples = [
         'create a task',
         'add a task',
