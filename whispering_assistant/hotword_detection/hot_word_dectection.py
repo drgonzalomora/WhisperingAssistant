@@ -55,7 +55,7 @@ def watch_audio_for_hotword():
                 print('[%s] Detected %s' % (str(datetime.now()), hot_word_keywords[result]))
                 recorder.stop()
                 recorder.delete()
-                subprocess.run(['bash', '/home/joshua/extrafiles/projects/openai-whisper/run.sh'])
+                subprocess.run(['bash', '/home/joshua/extrafiles/projects/WhisperingAssistant/run.sh'])
                 break
 
             if global_var_state.recently_transcribed is True or global_var_state.pause_hotword is True:
