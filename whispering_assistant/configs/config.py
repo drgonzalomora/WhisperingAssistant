@@ -27,7 +27,7 @@ RATE = 48000
 CHUNK_SECONDS = 0.1
 CHUNK = int(RATE * CHUNK_SECONDS)
 RECORD_SECONDS = 28
-MIC_INPUT_GAIN = 0.5
+MIC_INPUT_GAIN = 0.7
 SILENCE_THRESHOLD = (MIC_INPUT_GAIN * 100 * -1) - 2
 CONSECUTIVE_SILENCE_CHUNKS = 1
 
@@ -52,7 +52,7 @@ WhisperModel_tiny_PATH = "small"
 # compute_type="int8"
 # compute_type="int8_float16"
 # compute_type="float16"
-WhisperModel_COMPUTE = "int8_float16"
+WhisperModel_COMPUTE = "float16"
 
 # Embeddings
 Instructor_MODEL = 'hkunlp/instructor-base'
