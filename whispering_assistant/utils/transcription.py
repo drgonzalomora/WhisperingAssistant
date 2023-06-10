@@ -187,6 +187,12 @@ def start_mic_to_transcription(model=None):
 
     transcription_timer_check.start()
     audio = pyaudio.PyAudio()
+
+    # Iterate over the available input devices and print their information
+    for i in range(audio.get_device_count()):
+        device_info = audio.get_device_info_by_index(i)
+        print(f"Device index: {i}, Name: {device_info['name']}")
+
     stream = audio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
     set_microphone_volume('alsa_input', MIC_INPUT_GAIN)  # 50% volume
     transcription_timer_check.stop("open mic stream")
