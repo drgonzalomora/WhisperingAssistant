@@ -59,6 +59,7 @@ class SoundHandler:
         try:
             def play_and_set_volume():
                 time.sleep(0.1)
+                set_volume(50)
                 playsound(self.sounds[file_path])
                 set_volume(5)
 
