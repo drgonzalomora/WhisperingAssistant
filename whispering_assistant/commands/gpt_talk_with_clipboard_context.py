@@ -61,7 +61,7 @@ def send_question_to_gpt(query, new_conversation=False, gpt_type='GPT3', check_g
     time.sleep(1)
 
     if check_gpt_type:
-        image3_location = pyautogui.locateOnScreen(image3_gpt4_url, region=region3, confidence=0.90)
+        image3_location = pyautogui.locateOnScreen(image3_gpt4_url,  confidence=0.90)
         print("image3_location", image3_location)
         if image3_location is None:
             print("❌ CHAT GPT 4 not found on the screen.")
@@ -74,13 +74,13 @@ def send_question_to_gpt(query, new_conversation=False, gpt_type='GPT3', check_g
         time.sleep(2)
 
     # Check if image1_chat_logo exists on the screen
-    image1_location = pyautogui.locateOnScreen(image1_chat_logo, region=region1, confidence=0.8)
+    image1_location = pyautogui.locateOnScreen(image1_chat_logo,  confidence=0.8)
 
     if image1_location is not None:
         print(f"Image 1 found at {image1_location}")
 
         # Look for image2_chat_box on the screen
-        image2_location = pyautogui.locateOnScreen(image2_chat_box, region=region2, confidence=0.5)
+        image2_location = pyautogui.locateOnScreen(image2_chat_box,  confidence=0.5)
 
         if image2_location is not None:
             print(f"Image 2 found at {image2_location}")
@@ -102,7 +102,7 @@ def send_question_to_gpt(query, new_conversation=False, gpt_type='GPT3', check_g
             print("Typing and pressing enter done.")
 
             time.sleep(0.5)
-            image4_location = pyautogui.locateOnScreen(image4_chat_down_arrow, region=region4, confidence=0.80)
+            image4_location = pyautogui.locateOnScreen(image4_chat_down_arrow,  confidence=0.80)
 
             if image4_location is not None:
                 image4_center = pyautogui.center(image4_location)
