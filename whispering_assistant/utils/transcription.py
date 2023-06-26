@@ -198,6 +198,8 @@ def start_mic_to_transcription(model=None):
     transcription_timer_check.stop("open mic stream")
 
     transcription_timer_check.start()
+
+    # 📌 TODO: Instead of using a short initial transcription, let's add a queue that automatically sends chunks to a speech to text and checks the output for any keywords.
     frames, \
         chainable_commands, \
         skip_next_transcription, \
@@ -291,6 +293,7 @@ def start_mic_to_transcription(model=None):
             frames_for_processing = frames + frames
 
         transcription_timer_check.start()
+        # 📌 TODO: In order to make the transcription service as efficient as possible, we can move this part of the logic to the speech-to-text view. That way we can do both keywords detection as well as prompt detection before actually processing to a larger model.
         prev_result_text = save_file_then_transcribe(frames=frames_for_processing, model=model, audio=audio,
                                                      context_prompt=context_prompt, use_model_tiny=True)
         result_text = prev_result_text
