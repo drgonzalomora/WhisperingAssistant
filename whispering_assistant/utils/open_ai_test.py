@@ -61,7 +61,12 @@ When there is an observation, or you have a response to say to the Human, or if 
 
 Thought: Do I need to use a tool? No
 Rationale: <think about why you don't need a tool>
-Final Answer: <your response here, incorporate results from the tools if you have used any. NO NEED to give disclaimer to the user. DO NOT send code snippets or very long texts to the user. they won't see it as they can only hear what you say. so MAKE SURE that your response is easy to follow without the need for an elaborate text>
+Speak: <your response here, incorporate results from the tools if you have used any. NO NEED to give disclaimer to the user. DO NOT send code snippets or very long texts to the user. they won't see it as they can only hear what you say. so MAKE SURE that your response is easy to follow without the need for an elaborate text>
+
+---
+When you want to say something to the user MAKE SURE the use the following format!
+
+Speak: <give the response to the user in natural sounding narrative as if you are speaking>
 """
 
 history_list = [{"role": "system",
@@ -169,7 +174,7 @@ def askGpt(input_text, role="user"):
     print("✅ open_ai_req_counter", open_ai_req_counter)
 
     response = openai.ChatCompletion.create(
-        model='gpt-3.5-turbo',
+        model='gpt-3.5-turbo-0613',
         messages=history_list,
         temperature=0,
         stop=['Observation:'],
@@ -183,6 +188,7 @@ def askGpt(input_text, role="user"):
     # iterate through the stream of events
 
     buffer = ""
+    collecting_final_answer = False
 
     def buffer_clear():
         global buffer
@@ -202,19 +208,36 @@ def askGpt(input_text, role="user"):
             collected_parsed_messages.append(chunk_message['content'])
             buffer += chunk_message['content']
 
-            # Check if the buffer ends with a stop character, and the character before is an alphabet.
-            if re.search(r'[a-zA-Z][.,!:?\n]\s*$', buffer):
+            # It could be possible that we are streaming per letter and not per word, so this wont work
+            if "Speak:" in buffer:
+                print("🗣️ Speak Detected!")
+                collecting_final_answer = True
+                buffer = buffer[buffer.index('Speak:'):]
+                print("✅✅✅✅✅buffer", buffer)
+
+                # Check if the buffer ends with a stop character, and the character before is an alphabet.
+            if collecting_final_answer and re.search(r'[a-zA-Z][.,!:?\n]\s*$', buffer):
                 print("🗣️", buffer)  # print all messages in the buffer
                 # Add the buffer to the TTS queue
                 tts_queue.put((buffer, buffer_clear))
                 buffer = ""  # reset the buffer
 
+                # When do we reset this? how do we know the AI stop speaking?
+                # collecting_final_answer = False
+
+    # Speak is not always working as expected. and only works if the AI does the search
+    # To make this scable better to make several agents
+    # - agent to know which tool to use
+    # - agent to know how to speak the final answer, it needs to be converted in tts friendly text
+    # - agent that examins the output from tool and provide the answer
+
+    # Do we still need this if we just want the field speak to be spoken?
     # Check for any remaining items in the buffer after the loop
-    if buffer:
-        result_buffer = "".join(buffer)
-        # Add the buffer to the TTS queue
-        print("🗣️", result_buffer)
-        tts_queue.put((result_buffer, buffer_clear))
+    # if buffer:
+    #     result_buffer = "".join(buffer)
+    #     # Add the buffer to the TTS queue
+    #     print("🗣️", result_buffer)
+    #     tts_queue.put((result_buffer, buffer_clear))
 
     collected_parsed_messages_str = "".join(collected_parsed_messages)
     print("collected_parsed_messages", collected_parsed_messages_str)

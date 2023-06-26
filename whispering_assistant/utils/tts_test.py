@@ -101,7 +101,7 @@ def contains_only_special_characters(string):
 
 # TODO: We should convert numbers to word numbers since model cannot pronounce
 
-def tts_chunk_by_chunk(input_text, callback=None, word_limit=7):
+def tts_chunk_by_chunk(input_text, callback=None, word_limit=20):
     # Split the input text into words
     words = input_text.split()
 
