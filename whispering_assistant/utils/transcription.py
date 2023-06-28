@@ -165,6 +165,17 @@ transcription_timer_check = TimerCheck()
 
 def start_mic_to_transcription(model=None):
     print('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥 Starting Transcription')
+    transcription_timer_check.start()
+    audio = pyaudio.PyAudio()
+
+    # Iterate over the available input devices and print their information
+    for i in range(audio.get_device_count()):
+        device_info = audio.get_device_info_by_index(i)
+        print(f"Device index: {i}, Name: {device_info['name']}")
+
+    stream = audio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
+    set_microphone_volume('alsa_input', MIC_INPUT_GAIN)  # 50% volume
+    transcription_timer_check.stop("open mic stream")
 
     transcription_timer_check.start()
     message_queue.put(('create_avatar', 'show'))
@@ -186,20 +197,9 @@ def start_mic_to_transcription(model=None):
     transcription_timer_check.stop("play sound cue")
 
     transcription_timer_check.start()
-    audio = pyaudio.PyAudio()
-
-    # Iterate over the available input devices and print their information
-    for i in range(audio.get_device_count()):
-        device_info = audio.get_device_info_by_index(i)
-        print(f"Device index: {i}, Name: {device_info['name']}")
-
-    stream = audio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
-    set_microphone_volume('alsa_input', MIC_INPUT_GAIN)  # 50% volume
-    transcription_timer_check.stop("open mic stream")
-
-    transcription_timer_check.start()
 
     # 📌 TODO: Instead of using a short initial transcription, let's add a queue that automatically sends chunks to a speech to text and checks the output for any keywords.
+    # we can put this inside for-loop
     frames, \
         chainable_commands, \
         skip_next_transcription, \
@@ -221,6 +221,7 @@ def start_mic_to_transcription(model=None):
     if not skip_next_transcription:
 
         transcription_timer_check.start()
+        # TODO: We should have a keep condition on this for loop that once it detects certain keywords and detects the prompt to use, it will break.
         for i in range(0, max_it):
             # Add an offset since there was a first transcription done for 3 seconds
             data = stream.read(CHUNK * 2)
