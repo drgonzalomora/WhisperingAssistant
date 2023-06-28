@@ -53,10 +53,10 @@ WhisperModel_tiny_PATH = "small"
 # compute_type="int8"
 # compute_type="int8_float16"
 # compute_type="float16"
-WhisperModel_COMPUTE = "float16"
+WhisperModel_COMPUTE = "int8_float16"
 
 # Embeddings
-Instructor_MODEL = 'hkunlp/instructor-base'
+Instructor_MODEL = 'hkunlp/instructor-large'
 Instructor_DEVICE = "cpu"
 
 # Hot Word
